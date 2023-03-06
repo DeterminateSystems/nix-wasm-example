@@ -15,7 +15,10 @@
     , rust-overlay
     }:
     let
-      name = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).package.name;
+      fromToml = file: builtins.fromTOML (builtins.readFile file);
+      name = (fromToml ./Cargo.toml).package.name;
+      target = (fromToml ./.cargo/config.toml).build.target;
+
       overlays = [
         rust-overlay.overlays.default
         (self: super: {
@@ -41,24 +44,23 @@
           };
       });
 
-      packages = forAllSystems ({ pkgs, ... }: {
-        default =
-          let
-            target = "wasm32-wasi";
-            output = "lib/wasm";
-          in
-          pkgs.stdenv.mkDerivation {
-            inherit name;
-            src = ./.;
-            buildInputs = with pkgs; [ rustToolchain wasmtime ];
-            buildPhase = ''
-              cargo build --release --target ${target}
-            '';
-            installPhase = ''
-              mkdir -p $out/${output}
-              cp target/${target}/release/${name}.wasm $out/${output}
-            '';
-          };
+      packages = forAllSystems ({ pkgs, system }: {
+        default = pkgs.writeScriptBin "run-wasm" ''
+          ${pkgs.wasmtime}/bin/wasmtime ${self.packages.${system}.wasm}/${name}.wasm
+        '';
+
+        wasm = pkgs.stdenv.mkDerivation {
+          inherit name;
+          src = ./.;
+          buildInputs = with pkgs; [ rustToolchain wasmtime ];
+          buildPhase = ''
+            cargo build --release
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp target/${target}/release/${name}.wasm $out
+          '';
+        };
       });
     };
 }
