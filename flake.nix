@@ -36,7 +36,7 @@
         default =
           let
             runWasm = pkgs.writeScriptBin "run-wasm" ''
-              ${pkgs.wasmtime}/bin/wasmtime ${self.packages.${system}.default}/lib/wasm/${name}.wasm
+              ${pkgs.wasmtime}/bin/wasmtime ${self.packages.${system}.default}/${name}.wasm
             '';
           in
           pkgs.mkShell {
@@ -47,12 +47,8 @@
           };
       });
 
-      packages = forAllSystems ({ pkgs, system }: {
-        default = pkgs.writeScriptBin name ''
-          ${pkgs.wasmtime}/bin/wasmtime ${self.packages.${system}.wasm}/${name}.wasm
-        '';
-
-        wasm = pkgs.stdenv.mkDerivation {
+      packages = forAllSystems ({ pkgs, system }: rec {
+        default = pkgs.stdenv.mkDerivation {
           inherit name;
           src = ./.;
           buildInputs = with pkgs; [ rustToolchain ];
