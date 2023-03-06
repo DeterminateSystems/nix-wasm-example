@@ -40,19 +40,22 @@
             '';
           in
           pkgs.mkShell {
-            packages = [ runWasm ] ++ (with pkgs; [ cargo-wasi wasmtime ]);
+            packages = [ runWasm ] ++ (with pkgs; [
+              wabt
+              wasmtime
+            ]);
           };
       });
 
       packages = forAllSystems ({ pkgs, system }: {
-        default = pkgs.writeScriptBin "run-wasm" ''
+        default = pkgs.writeScriptBin name ''
           ${pkgs.wasmtime}/bin/wasmtime ${self.packages.${system}.wasm}/${name}.wasm
         '';
 
         wasm = pkgs.stdenv.mkDerivation {
           inherit name;
           src = ./.;
-          buildInputs = with pkgs; [ rustToolchain wasmtime ];
+          buildInputs = with pkgs; [ rustToolchain ];
           buildPhase = ''
             cargo build --release
           '';
