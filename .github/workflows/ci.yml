@@ -1,0 +1,30 @@
+name: Nix + Wasm example project
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  check:
+    environment: check
+    runs-on: ubuntu-22.04
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+      - uses: DeterminateSystems/nix-installer-action@v1
+        with:
+          extra-conf: |
+            binary-caches = https://cache.nixos.org https://${{ secrets.CACHIX_CACHE }}.cachix.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ${{ secrets.CACHIX_TRUSTED_PUBLIC_KEY }}
+            trusted-substituters = https://cache.nixos.org https://${{ secrets.CACHIX_CACHE }}.cachix.org
+            trusted-users = root runner
+      - name: Cachix setup
+        run: |
+          nix develop --command cachix authtoken ${{ secrets.CACHIX_AUTH_TOKEN }}
+          nix develop --command cachix use ${{ secrets.CACHIX_CACHE }}
+      - name: check-run
+        run: nix develop --command check-run
+      - name: check-validate
+        run: nix develop --command check-validate

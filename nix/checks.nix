@@ -1,4 +1,7 @@
-{ name, pkgs, wasm }:
+{ name
+, pkgs
+, wasm
+}:
 
 let
   wasmFile = "${wasm}/lib/wasm/${name}.wasm";
