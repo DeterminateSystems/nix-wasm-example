@@ -35,11 +35,15 @@ This generates a Wasm binary in `result/nix-wasm-example.wasm`.
 nix build .#stripped
 ```
 
+This generates a [stripped] Wasm binary in `result/nix-wasm-example-stripped.wasm`.
+
 ### Generate opcode usage
 
 ```shell
 nix build .#opcode
 ```
+
+This generates a `.dist` file in `result/nix-wasm-example.dist`.
 
 ### Build a WebAssembly text format (WAT) file
 
@@ -58,6 +62,13 @@ nix build
 nix build .#all
 ```
 
+This generates several files in [`result`][^1]:
+
+* `nix-wasm-example.wasm`
+* `nix-wasm-example.dist`
+* `nix-wasm-example.wat`
+* `nix-wasm-example-stripped.wasm`
+
 ### Test
 
 ```shell
@@ -67,13 +78,16 @@ cargo test
 ### Run
 
 ```shell
-check-run
+run-wasm
+
+# Run the stripped version
+run-wasm-stripped
 ```
 
 ### Validate
 
 ```shell
-check-validate
+validate-wasm
 ```
 
 ## Advantages of Nix for Wasm development
@@ -89,6 +103,9 @@ Building Wasm tends to be tricky because:
 [direnv]: https://direnv.net
 [dni]: https://github.com/DeterminateSystems/nix-installer
 [nix]: https://zero-to-nix.com
+[store]: https://zero-to-nix.com/concepts/nix-store
 [stripped]: https://webassembly.github.io/wabt/doc/wasm-strip.1.html
 [wasm]: https://webassembly.org
 [wat]: https://developer.mozilla.org/docs/WebAssembly/Understanding_the_text_format
+
+[^1]: `result` isn't a directory but rather a symlink to the build result in the [Nix store][store].

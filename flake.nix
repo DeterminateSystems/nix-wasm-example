@@ -71,7 +71,7 @@
                 mkdir $out
                 cp ${wasmPkgs.wasm}/${name}.wasm $out
                 cp ${wasmPkgs.wat}/${name}.wat $out
-                cp ${wasmPkgs.dist}/${name}.dist $out
+                cp ${wasmPkgs.opcode}/${name}.dist $out
                 cp ${wasmPkgs.stripped}/${name}-stripped.wasm $out
               '';
             };
@@ -108,8 +108,8 @@
             '';
           };
 
-          dist = pkgs.stdenv.mkDerivation {
-            name = "wasm-into-dist";
+          opcode = pkgs.stdenv.mkDerivation {
+            name = "wasm-into-opcode-count";
             src = ./.;
             buildInputs = with pkgs; [ wabt ];
             buildPhase = ''
