@@ -24,7 +24,7 @@ nix develop
 ### Build Wasm binary
 
 ```shell
-nix build .#wasm
+nix build ".#wasm"
 ```
 
 This generates a Wasm binary in `result/nix-wasm-example.wasm`.
@@ -32,7 +32,7 @@ This generates a Wasm binary in `result/nix-wasm-example.wasm`.
 ### Build a [stripped] binary
 
 ```shell
-nix build .#stripped
+nix build ".#stripped"
 ```
 
 This generates a [stripped] Wasm binary in `result/nix-wasm-example-stripped.wasm`.
@@ -40,7 +40,7 @@ This generates a [stripped] Wasm binary in `result/nix-wasm-example-stripped.was
 ### Generate opcode usage
 
 ```shell
-nix build .#opcode
+nix build ".#opcode"
 ```
 
 This generates a `.dist` file in `result/nix-wasm-example.dist`.
@@ -48,7 +48,7 @@ This generates a `.dist` file in `result/nix-wasm-example.dist`.
 ### Build a WebAssembly text format (WAT) file
 
 ```shell
-nix build .#wat
+nix build ".#wat"
 ```
 
 This generates a [WAT] file in `result/nix-wasm-example.wat`.
@@ -59,7 +59,7 @@ This generates a [WAT] file in `result/nix-wasm-example.wat`.
 nix build
 
 # shorthand for:
-nix build .#all
+nix build ".#all"
 ```
 
 This generates several files in `result`[^1]:
