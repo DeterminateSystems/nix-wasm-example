@@ -41,13 +41,13 @@
           let
             checks = import ./nix/checks.nix {
               inherit name pkgs;
-              wasm = self.packages.${system}.default;
+              wasm = self.packages.${system}.wasm;
             };
 
             helpers = with pkgs; [ direnv jq ];
           in
           pkgs.mkShell {
-            packages = checks ++ helpers ++ (with pkgs; [
+            packages = helpers ++ checks ++ (with pkgs; [
               cachix # Binary caching
               wabt # WebAssembly Binary Toolit
               wasmtime # Wasm runtime
@@ -56,27 +56,44 @@
       });
 
       packages = forAllSystems ({ pkgs, system }: rec {
-        default = wasi;
+        default = wasm;
 
-        wasi = self.lib.mkRustWasmPackage {
+        # Generate Wasm binary
+        wasm = self.lib.mkRustWasmPackage {
           inherit pkgs name;
           target = "wasm32-wasi";
+        };
+
+        # Generate WAT file (WebAssembly Text Format)
+        wat = pkgs.stdenv.mkDerivation {
+          name = "wasm-into-wat";
+          src = ./.;
+          buildInputs = with pkgs; [ wabt ];
+          buildPhase = ''
+            wasm2wat ${self.packages.${system}.wasm}/${name}.wasm > ${name}.wat
+          '';
+          installPhase = ''
+            mkdir $out
+            cp ${name}.wat $out
+          '';
         };
       });
 
       lib = {
-        mkRustWasmPackage = { pkgs, name, target }: pkgs.stdenv.mkDerivation {
-          inherit name;
-          src = ./.;
-          buildInputs = with pkgs; [ rustToolchain ];
-          buildPhase = ''
-            cargo build --target ${target} --release
-          '';
-          installPhase = ''
-            mkdir -p $out/lib/wasm
-            cp target/${target}/release/${name}.wasm $out/lib/wasm
-          '';
-        };
+        # Helper function for generating Wasm using Rust
+        mkRustWasmPackage = { pkgs, name, target }:
+          pkgs.stdenv.mkDerivation {
+            inherit name;
+            src = ./.;
+            buildInputs = with pkgs; [ rustToolchain ];
+            buildPhase = ''
+              cargo build --target ${target} --release
+            '';
+            installPhase = ''
+              mkdir $out
+              cp target/${target}/release/${name}.wasm $out
+            '';
+          };
       };
     };
 }

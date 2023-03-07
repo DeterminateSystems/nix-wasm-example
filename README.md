@@ -21,11 +21,24 @@ nix develop
 
 ## Actions
 
-### Build
+### Build Wasm binary
 
 ```shell
 nix build
+
+# shorthand for:
+nix build .#wasm
 ```
+
+This generates a Wasm binary in `result/nix-wasm-example.wasm`.
+
+### Build a WebAssembly text format (WAT) file
+
+```shell
+nix build .#wat
+```
+
+This generates a [WAT] file in `result/nix-wasm-example.wat`.
 
 ### Test
 
@@ -58,3 +71,4 @@ Building Wasm tends to be tricky because:
 [dni]: https://github.com/DeterminateSystems/nix-installer
 [nix]: https://zero-to-nix.com
 [wasm]: https://webassembly.org
+[wat]: https://developer.mozilla.org/docs/WebAssembly/Understanding_the_text_format
