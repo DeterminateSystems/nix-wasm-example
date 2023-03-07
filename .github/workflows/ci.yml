@@ -28,10 +28,12 @@ jobs:
           nix develop --command direnv allow
           eval "$(nix develop --command direnv export bash)"
           echo "$PATH" >> $GITHUB_PATH
-      - name: Cachix setup
+      - name: Binary cache setup
         run: |
           cachix authtoken ${{ secrets.CACHIX_AUTH_TOKEN }}
           cachix use ${{ secrets.CACHIX_CACHE }}
+      - name: Run tests
+        run: cargo test
       - name: Run the binary
         run: check-run
       - name: Validate the binary

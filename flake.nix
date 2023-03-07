@@ -17,7 +17,6 @@
     let
       fromToml = file: builtins.fromTOML (builtins.readFile file);
       name = (fromToml ./Cargo.toml).package.name;
-      target = (fromToml ./.cargo/config.toml).build.target;
 
       overlays = [
         rust-overlay.overlays.default
