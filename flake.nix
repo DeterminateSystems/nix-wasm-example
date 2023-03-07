@@ -42,6 +42,7 @@
             checks = import ./nix/checks.nix {
               inherit name pkgs;
               wasm = self.packages.${system}.wasm;
+              stripped = self.packages.${system}.stripped;
             };
 
             helpers = with pkgs; [ direnv jq ];
@@ -55,45 +56,83 @@
           };
       });
 
-      packages = forAllSystems ({ pkgs, system }: rec {
-        default = wasm;
+      packages = forAllSystems ({ pkgs, system }:
+        let
+          wasmPkgs = self.packages.${system};
+        in
+        rec {
+          default = all;
 
-        # Generate Wasm binary
-        wasm = self.lib.mkRustWasmPackage {
-          inherit pkgs name;
-          target = "wasm32-wasi";
-        };
+          all =
+            pkgs.stdenv.mkDerivation {
+              name = "wasm-all";
+              src = ./.;
+              installPhase = ''
+                mkdir $out
+                cp ${wasmPkgs.wasm}/${name}.wasm $out
+                cp ${wasmPkgs.wat}/${name}.wat $out
+                cp ${wasmPkgs.dist}/${name}.dist $out
+                cp ${wasmPkgs.stripped}/${name}-stripped.wasm $out
+              '';
+            };
 
-        # Generate WAT file (WebAssembly Text Format)
-        wat = pkgs.stdenv.mkDerivation {
-          name = "wasm-into-wat";
-          src = ./.;
-          buildInputs = with pkgs; [ wabt ];
-          buildPhase = ''
-            wasm2wat ${self.packages.${system}.wasm}/${name}.wasm > ${name}.wat
-          '';
-          installPhase = ''
-            mkdir $out
-            cp ${name}.wat $out
-          '';
-        };
-      });
+          # Generate Wasm binary using Rust
+          wasm =
+            let
+              target = "wasm32-wasi";
+            in
+            pkgs.stdenv.mkDerivation {
+              inherit name;
+              src = ./.;
+              buildInputs = with pkgs; [ rustToolchain ];
+              buildPhase = ''
+                cargo build --target ${target} --release
+              '';
+              installPhase = ''
+                mkdir $out
+                cp target/${target}/release/${name}.wasm $out
+              '';
+            };
 
-      lib = {
-        # Helper function for generating Wasm using Rust
-        mkRustWasmPackage = { pkgs, name, target }:
-          pkgs.stdenv.mkDerivation {
-            inherit name;
+          # Generate WAT file (WebAssembly Text Format)
+          wat = pkgs.stdenv.mkDerivation {
+            name = "wasm-into-wat";
             src = ./.;
-            buildInputs = with pkgs; [ rustToolchain ];
+            buildInputs = with pkgs; [ wabt ];
             buildPhase = ''
-              cargo build --target ${target} --release
+              wasm2wat ${wasmPkgs.wasm}/${name}.wasm > ${name}.wat
             '';
             installPhase = ''
               mkdir $out
-              cp target/${target}/release/${name}.wasm $out
+              cp ${name}.wat $out
             '';
           };
-      };
+
+          dist = pkgs.stdenv.mkDerivation {
+            name = "wasm-into-dist";
+            src = ./.;
+            buildInputs = with pkgs; [ wabt ];
+            buildPhase = ''
+              wasm-opcodecnt ${wasmPkgs.wasm}/${name}.wasm -o ${name}.dist
+            '';
+            installPhase = ''
+              mkdir $out
+              cp ${name}.dist $out
+            '';
+          };
+
+          stripped = pkgs.stdenv.mkDerivation {
+            name = "wasm-stripped";
+            src = ./.;
+            buildInputs = with pkgs; [ wabt ];
+            buildPhase = ''
+              wasm-strip ${wasmPkgs.wasm}/${name}.wasm -o ${name}-stripped.wasm
+            '';
+            installPhase = ''
+              mkdir $out
+              cp ${name}-stripped.wasm $out
+            '';
+          };
+        });
     };
 }

@@ -32,10 +32,8 @@ jobs:
         run: |
           cachix authtoken ${{ secrets.CACHIX_AUTH_TOKEN }}
           cachix use ${{ secrets.CACHIX_CACHE }}
-      - name: Build Wasm
-        run: nix build .#wasm
-      - name: Generate WAT
-        run: nix build .#wat
+      - name: Build all
+        run: nix build
       - name: Run tests
         run: cargo test
       - name: Run the binary
