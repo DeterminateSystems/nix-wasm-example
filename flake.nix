@@ -44,10 +44,12 @@
               inherit name pkgs;
               wasm = self.packages.${system}.default;
             };
+
+            helpers = with pkgs; [ direnv jq ];
           in
           pkgs.mkShell {
-            packages = checks ++ (with pkgs; [
-              cachix # for binary caching
+            packages = checks ++ helpers ++ (with pkgs; [
+              cachix # Binary caching
               wabt # WebAssembly Binary Toolit
               wasmtime # Wasm runtime
             ]);
