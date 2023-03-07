@@ -35,12 +35,13 @@
       devShells = forAllSystems ({ pkgs, system }: {
         default =
           let
-            runWasm = pkgs.writeScriptBin "run-wasm" ''
-              ${pkgs.wasmtime}/bin/wasmtime ${self.packages.${system}.default}/${name}.wasm
-            '';
+            checks = import ./nix/checks.nix {
+              inherit name pkgs;
+              wasm = self.packages.${system}.default;
+            };
           in
           pkgs.mkShell {
-            packages = [ runWasm ] ++ (with pkgs; [
+            packages = checks ++ (with pkgs; [
               wabt
               wasmtime
             ]);
@@ -48,18 +49,28 @@
       });
 
       packages = forAllSystems ({ pkgs, system }: rec {
-        default = pkgs.stdenv.mkDerivation {
-          inherit name;
-          src = ./.;
-          buildInputs = with pkgs; [ rustToolchain ];
-          buildPhase = ''
-            cargo build --release
-          '';
-          installPhase = ''
-            mkdir -p $out
-            cp target/${target}/release/${name}.wasm $out
-          '';
+        default = wasi;
+
+        wasi = self.lib.mkRustWasmPackage {
+          inherit pkgs name;
+          rustToolchain = pkgs.rustToolchain;
+          target = "wasm32-wasi";
         };
       });
+
+      lib = {
+        mkRustWasmPackage = { pkgs, name, rustToolchain, target }: pkgs.stdenv.mkDerivation {
+          inherit name;
+          src = ./.;
+          buildInputs = [ rustToolchain ];
+          buildPhase = ''
+            cargo build --target ${target} --release
+          '';
+          installPhase = ''
+            mkdir -p $out/lib/wasm
+            cp target/${target}/release/${name}.wasm $out/lib/wasm
+          '';
+        };
+      };
     };
 }
