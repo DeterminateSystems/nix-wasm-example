@@ -11,7 +11,7 @@ curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix 
   | sh -s -- install
 ```
 
-With Nix installed, you can activatee the [development environment][dev]:
+With Nix installed, you can activate the [development environment][dev]:
 
 ```shell
 nix develop
@@ -19,29 +19,39 @@ nix develop
 
 > **Note**: This should happen automatically if you have [direnv] installed.
 
-## Build
+## Actions
+
+### Build
 
 ```shell
 nix build
 ```
 
-## Test
+### Test
 
 ```shell
 cargo test
 ```
 
-## Run
+### Run
 
 ```shell
 check-run
 ```
 
-## Validate
+### Validate
 
 ```shell
 check-validate
 ```
+
+## Advantages of Nix for Wasm development
+
+Building Wasm tends to be tricky because:
+
+* Many languages can build Wasm
+* Successful development environments often involve multiple tools, compilers, runtimes, etc.
+* Tying everything together with scripts can get kludgey
 
 [dev]: https://zero-to-nix.com/concepts/dev-env
 [direnv]: https://direnv.net
