@@ -62,7 +62,7 @@ nix build
 nix build .#all
 ```
 
-This generates several files in [`result`][^1]:
+This generates several files in `result`[^1]:
 
 * `nix-wasm-example.wasm`
 * `nix-wasm-example.dist`
