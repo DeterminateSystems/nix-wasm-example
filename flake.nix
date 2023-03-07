@@ -25,8 +25,13 @@
           rustToolchain = super.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
         })
       ];
-      systems = [ "aarch64-darwin" ]; # TODO: add other systems
-      forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f {
+      supportedSystems = [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "x86_64-linux"
+      ];
+      forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
         pkgs = import nixpkgs { inherit overlays system; };
         inherit system;
       });
@@ -42,8 +47,9 @@
           in
           pkgs.mkShell {
             packages = checks ++ (with pkgs; [
-              wabt
-              wasmtime
+              cachix # for binary caching
+              wabt # WebAssembly Binary Toolit
+              wasmtime # Wasm runtime
             ]);
           };
       });
@@ -53,16 +59,15 @@
 
         wasi = self.lib.mkRustWasmPackage {
           inherit pkgs name;
-          rustToolchain = pkgs.rustToolchain;
           target = "wasm32-wasi";
         };
       });
 
       lib = {
-        mkRustWasmPackage = { pkgs, name, rustToolchain, target }: pkgs.stdenv.mkDerivation {
+        mkRustWasmPackage = { pkgs, name, target }: pkgs.stdenv.mkDerivation {
           inherit name;
           src = ./.;
-          buildInputs = [ rustToolchain ];
+          buildInputs = with pkgs; [ rustToolchain ];
           buildPhase = ''
             cargo build --target ${target} --release
           '';
