@@ -74,7 +74,7 @@ This generates several files in `result`[^1]:
 ### Test
 
 ```shell
-cargo test
+run-test-suite
 ```
 
 ### Run

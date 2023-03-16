@@ -1,7 +1,8 @@
 { name
 , pkgs
-, wasm
+, rustToolchain
 , stripped
+, wasm
 }:
 
 let
@@ -13,23 +14,30 @@ in
   # Ensure that the binary can be run
   (app {
     name = "run-wasm";
-    runtimeInputs = with pkgs; [ wasmtime ];
-    text = "wasmtime ${wasmFile}";
+    text = "${pkgs.wasmtime}/bin/wasmtime ${wasm}/bin/${name}.wasm";
   })
 
   # Ensure that the stripped version of the binary can be run
   (app {
     name = "run-wasm-stripped";
-    runtimeInputs = with pkgs; [ wasmtime ];
-    text = "wasmtime ${strippedWasmFile}";
+    text = "${pkgs.wasmtime}/bin/wasmtime ${strippedWasmFile}";
   })
 
   # Ensure that the binary is valid
   (app {
     name = "validate-wasm";
-    runtimeInputs = with pkgs; [ wabt ];
     text = ''
-      wasm-validate ${wasmFile}
+      ${pkgs.wabt}/bin/wasm-validate ${wasmFile}
+    '';
+  })
+
+  (app {
+    name = "run-test-suite";
+    text = ''
+      ${rustToolchain}/bin/cargo test
+      validate-wasm
+      run-wasm
+      run-wasm-stripped
     '';
   })
 ]
