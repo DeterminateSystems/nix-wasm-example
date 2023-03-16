@@ -41,10 +41,8 @@
           let
             checks = import ./nix/checks.nix {
               inherit name pkgs;
-              wasm = self.packages.${system}.wasm;
-              stripped = self.packages.${system}.stripped;
+              inherit (self.packages.${system}) stripped wasm;
             };
-
             helpers = with pkgs; [ direnv jq ];
           in
           pkgs.mkShell {
