@@ -5,8 +5,8 @@
 }:
 
 let
-  wasmFile = "${wasm}/${name}.wasm";
-  strippedWasmFile = "${stripped}/${name}-stripped.wasm";
+  wasmFile = "${wasm}/bin/${name}.wasm";
+  strippedWasmFile = "${stripped}/bin/${name}-stripped.wasm";
   app = pkgs.writeShellApplication;
 in
 [

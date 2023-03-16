@@ -48,7 +48,7 @@
           pkgs.mkShell {
             packages = helpers ++ checks ++ (with pkgs; [
               cachix # Binary caching
-              wabt # WebAssembly Binary Toolit
+              wabt # WebAssembly Binary Toolkit
               wasmtime # Wasm runtime
             ]);
           };
@@ -66,11 +66,11 @@
               name = "wasm-all";
               src = ./.;
               installPhase = ''
-                mkdir $out
-                cp ${wasmPkgs.wasm}/${name}.wasm $out
-                cp ${wasmPkgs.wat}/${name}.wat $out
-                cp ${wasmPkgs.opcode}/${name}.dist $out
-                cp ${wasmPkgs.stripped}/${name}-stripped.wasm $out
+                mkdir -p $out/bin $out/share
+                cp ${wasmPkgs.wasm}/bin/${name}.wasm $out/bin
+                cp ${wasmPkgs.wat}/share/${name}.wat $out/share
+                cp ${wasmPkgs.opcode}/share/${name}.dist $out/share
+                cp ${wasmPkgs.stripped}/bin/${name}-stripped.wasm $out/bin
               '';
             };
 
@@ -87,8 +87,8 @@
                 cargo build --target ${target} --release
               '';
               installPhase = ''
-                mkdir $out
-                cp target/${target}/release/${name}.wasm $out
+                mkdir -p $out/bin
+                cp target/${target}/release/${name}.wasm $out/bin
               '';
             };
 
@@ -98,11 +98,11 @@
             src = ./.;
             buildInputs = with pkgs; [ wabt ];
             buildPhase = ''
-              wasm2wat ${wasmPkgs.wasm}/${name}.wasm > ${name}.wat
+              wasm2wat ${wasmPkgs.wasm}/bin/${name}.wasm > ${name}.wat
             '';
             installPhase = ''
-              mkdir $out
-              cp ${name}.wat $out
+              mkdir -p $out/share
+              cp ${name}.wat $out/share
             '';
           };
 
@@ -111,11 +111,11 @@
             src = ./.;
             buildInputs = with pkgs; [ wabt ];
             buildPhase = ''
-              wasm-opcodecnt ${wasmPkgs.wasm}/${name}.wasm -o ${name}.dist
+              wasm-opcodecnt ${wasmPkgs.wasm}/bin/${name}.wasm -o ${name}.dist
             '';
             installPhase = ''
-              mkdir $out
-              cp ${name}.dist $out
+              mkdir -p $out/share
+              cp ${name}.dist $out/share
             '';
           };
 
@@ -124,11 +124,11 @@
             src = ./.;
             buildInputs = with pkgs; [ wabt ];
             buildPhase = ''
-              wasm-strip ${wasmPkgs.wasm}/${name}.wasm -o ${name}-stripped.wasm
+              wasm-strip ${wasmPkgs.wasm}/bin/${name}.wasm -o ${name}-stripped.wasm
             '';
             installPhase = ''
-              mkdir $out
-              cp ${name}-stripped.wasm $out
+              mkdir -p $out/bin
+              cp ${name}-stripped.wasm $out/bin
             '';
           };
         });
