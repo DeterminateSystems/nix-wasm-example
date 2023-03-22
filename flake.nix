@@ -68,6 +68,7 @@
           in
           pkgs.mkShell {
             packages = helpers ++ checks ++ (with pkgs; [
+              rustToolchain # cargo, etc.
               cachix # Binary caching
               wabt # WebAssembly Binary Toolkit
               wasmtime # Wasm runtime
