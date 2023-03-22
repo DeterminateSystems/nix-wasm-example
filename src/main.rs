@@ -1,14 +1,14 @@
-use std::{env, process::exit};
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    #[arg(short, long)]
+    name: String,
+}
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() < 2 {
-        eprintln!("ERROR");
-        exit(1);
-    }
-
-    let name = &args[1];
-
+    let args = Args::parse();
+    let name = args.name;
     println!("Hello there, {name}!");
 }

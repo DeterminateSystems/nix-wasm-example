@@ -15,10 +15,10 @@
     , rust-overlay
     }:
     let
-      fromToml = file: builtins.fromTOML (builtins.readFile file);
-      pkgName = (fromToml ./Cargo.toml).package.name;
+      pkgName = (self.lib.fromToml ./Cargo.toml).package.name;
 
       overlays = [
+        # Provides a `rust-bin` attribute I can use to build a custom Rust toolchain
         rust-overlay.overlays.default
         (self: super: rec {
           rustToolchain = super.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
@@ -55,6 +55,8 @@
       });
     in
     {
+
+
       devShells = forAllSystems ({ pkgs, system }: {
         default =
           let
@@ -69,6 +71,7 @@
               cachix # Binary caching
               wabt # WebAssembly Binary Toolkit
               wasmtime # Wasm runtime
+              cargo-edit # cargo add, cargo rm, etc.
             ]);
           };
       });
@@ -140,5 +143,10 @@
             '';
           };
         });
+
+      lib = {
+        # Helper function for reading TOML files
+        fromToml = file: builtins.fromTOML (builtins.readFile file);
+      };
     };
 }

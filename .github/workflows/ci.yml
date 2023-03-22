@@ -33,13 +33,9 @@ jobs:
           cachix authtoken ${{ secrets.CACHIX_AUTH_TOKEN }}
           cachix use ${{ secrets.CACHIX_CACHE }}
       - name: Build all
-        run: nix build
-      - name: Run tests
-        run: cargo test
-      - name: Run the binary
-        run: run-wasm
-      - name: Validate the binary
-        run: validate-wasm
+        run: nix build -L
+      - name: Run fully test suite
+        run: run-test-suite
       - name: Cache development environment
         run: |
           nix develop --profile ${{ env.REPO }}

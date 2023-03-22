@@ -26,7 +26,7 @@ in
   (mkBin "run-test-suite" ''
     validate-wasm
     validate-stripped-wasm
-    run-wasm "Testing"
-    run-wasm-stripped "Testing, but stripped"
+    run-wasm -- --name "Nix enthusiast"
+    run-wasm-stripped -- --name "Nix enthusiast"
   '')
 ]
