@@ -1,21 +1,14 @@
-fn text_output() -> String {
-    String::from("Hello from a Wasm program built using Nix and Rust!")
-}
+use std::{env, process::exit};
 
 fn main() {
-    println!("{}", text_output());
-}
+    let args: Vec<String> = env::args().collect();
 
-#[cfg(test)]
-mod tests {
-    use crate::text_output;
-
-    #[test]
-    fn text_output_matches_expected() {
-        let output = text_output();
-        assert_eq!(
-            output,
-            "Hello from a Wasm program built using Nix and Rust!"
-        );
+    if args.len() < 2 {
+        eprintln!("ERROR");
+        exit(1);
     }
+
+    let name = &args[1];
+
+    println!("Hello there, {name}!");
 }

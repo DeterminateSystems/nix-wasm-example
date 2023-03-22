@@ -42,7 +42,6 @@
             checks = import ./nix/checks.nix {
               inherit name pkgs;
               inherit (self.packages.${system}) stripped wasm;
-              inherit (pkgs) rustToolchain;
             };
             helpers = with pkgs; [ direnv jq ];
           in

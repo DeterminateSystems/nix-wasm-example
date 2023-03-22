@@ -1,43 +1,32 @@
 { name
 , pkgs
-, rustToolchain
 , stripped
 , wasm
 }:
 
 let
+  wasmValidate = "${pkgs.wabt}/bin/wasm-validate";
+  wasmtime = "${pkgs.wasmtime}/bin/wasmtime";
   wasmFile = "${wasm}/bin/${name}.wasm";
   strippedWasmFile = "${stripped}/bin/${name}-stripped.wasm";
-  app = pkgs.writeShellApplication;
+  mkBin = name: text: pkgs.writeShellApplication { inherit name text; };
 in
 [
   # Ensure that the binary can be run
-  (app {
-    name = "run-wasm";
-    text = "${pkgs.wasmtime}/bin/wasmtime ${wasm}/bin/${name}.wasm";
-  })
+  (mkBin "run-wasm" ''${wasmtime} ${wasmFile} "''${@}"'')
 
   # Ensure that the stripped version of the binary can be run
-  (app {
-    name = "run-wasm-stripped";
-    text = "${pkgs.wasmtime}/bin/wasmtime ${strippedWasmFile}";
-  })
+  (mkBin "run-wasm-stripped" ''${wasmtime} ${strippedWasmFile} "''${@}"'')
 
   # Ensure that the binary is valid
-  (app {
-    name = "validate-wasm";
-    text = ''
-      ${pkgs.wabt}/bin/wasm-validate ${wasmFile}
-    '';
-  })
+  (mkBin "validate-wasm" "${wasmValidate} ${wasmFile}")
 
-  (app {
-    name = "run-test-suite";
-    text = ''
-      ${rustToolchain}/bin/cargo test
-      validate-wasm
-      run-wasm
-      run-wasm-stripped
-    '';
-  })
+  (mkBin "validate-stripped-wasm" "${wasmValidate} ${strippedWasmFile}")
+
+  (mkBin "run-test-suite" ''
+    validate-wasm
+    validate-stripped-wasm
+    run-wasm "Testing"
+    run-wasm-stripped "Testing, but stripped"
+  '')
 ]
