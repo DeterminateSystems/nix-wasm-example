@@ -9,14 +9,19 @@ let
   wasmtime = "${pkgs.wasmtime}/bin/wasmtime";
   wasmFile = "${wasm}/lib/${pkgName}.wasm";
   strippedWasmFile = "${stripped}/lib/${pkgName}-stripped.wasm";
+
+  # Make basic script
   mkBin = name: text: pkgs.writeShellApplication { inherit name text; };
+
+  # Make CLI tool (pass in CLI args)
+  mkCli = name: text: pkgs.writeShellApplication { inherit name; text = ''${text} "''${@}"''; };
 in
 [
   # Ensure that the binary can be run
-  (mkBin "run-wasm" ''${wasmtime} ${wasmFile} "''${@}"'')
+  (mkCli "run-wasm" "${wasmtime} ${wasmFile}")
 
   # Ensure that the stripped version of the binary can be run
-  (mkBin "run-wasm-stripped" ''${wasmtime} ${strippedWasmFile} "''${@}"'')
+  (mkCli "run-wasm-stripped" "${wasmtime} ${strippedWasmFile}")
 
   # Ensure that the binary is valid
   (mkBin "validate-wasm" "${wasmValidate} ${wasmFile}")

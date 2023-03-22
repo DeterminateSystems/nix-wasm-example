@@ -55,8 +55,6 @@
       });
     in
     {
-
-
       devShells = forAllSystems ({ pkgs, system }: {
         default =
           let
@@ -96,6 +94,13 @@
                 cp ${wasmPkgs.opcode}/share/${pkgName}.dist $out/share
               '';
             };
+
+          hello-wasm = pkgs.writeShellApplication {
+            name = "hello-wasm";
+            text = ''
+              ${pkgs.wasmtime}/bin/wasmtime ${wasmPkgs.wasm}/lib/${pkgName}.wasm "''${@}"
+            '';
+          };
 
           # Generate Wasm binary using Rust
           wasm = pkgs.buildRustWasiWasm {
