@@ -69,6 +69,7 @@
               rustToolchain # cargo, etc.
               cachix # Binary caching
               wabt # WebAssembly Binary Toolkit
+              wasmedge # Wasm runtime
               wasmtime # Wasm runtime
               cargo-edit # cargo add, cargo rm, etc.
             ]);
@@ -98,7 +99,6 @@
           hello-wasm = pkgs.stdenv.mkDerivation rec {
             name = "hello-wasm";
             nativeBuildInputs = with pkgs; [ makeWrapper ];
-            buildInputs = with pkgs; [ wasmtime ];
             src = ./.;
             installPhase = ''
               mkdir -p $out/bin $out/lib
@@ -106,6 +106,18 @@
               makeWrapper ${pkgs.wasmtime}/bin/wasmtime $out/bin/${name} \
                 --add-flags "$out/lib/${pkgName}.wasm" \
                 --add-flags "--"
+            '';
+          };
+
+          hello-wasm-edge = pkgs.stdenv.mkDerivation rec {
+            name = "hello-wasm";
+            nativeBuildInputs = with pkgs; [ makeWrapper ];
+            src = ./.;
+            installPhase = ''
+              mkdir -p $out/bin $out/lib
+              cp ${wasmPkgs.wasm}/lib/${pkgName}.wasm $out/lib
+              makeWrapper ${pkgs.wasmedge}/bin/wasmedge $out/bin/${name} \
+                --add-flags "$out/lib/${pkgName}.wasm"
             '';
           };
 
