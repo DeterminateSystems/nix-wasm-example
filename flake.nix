@@ -16,26 +16,29 @@
     }:
     let
       fromToml = file: builtins.fromTOML (builtins.readFile file);
-      name = (fromToml ./Cargo.toml).package.name;
+      pkgName = (fromToml ./Cargo.toml).package.name;
 
       overlays = [
         rust-overlay.overlays.default
         (self: super: rec {
           rustToolchain = super.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
-          buildRustWasiWasm = { name, src, bin ? name }:
+          buildRustWasiWasm = { name, src, cargoLock }:
             let
+              rustPlatform = super.makeRustPlatform {
+                cargo = rustToolchain;
+                rustc = rustToolchain;
+              };
               target = "wasm32-wasi";
             in
-            super.stdenv.mkDerivation {
-              inherit name src;
-              buildInputs = [ rustToolchain ];
+            rustPlatform.buildRustPackage {
+              inherit cargoLock name src;
               buildPhase = ''
-                cargo build --target ${target} --release
+                cargo build --release --target ${target}
               '';
               installPhase = ''
-                mkdir -p $out/bin
-                cp target/${target}/release/${bin}.wasm $out/bin
+                mkdir -p $out/lib
+                cp target/${target}/release/${pkgName}.wasm $out/lib
               '';
             };
         })
@@ -56,7 +59,7 @@
         default =
           let
             checks = import ./nix/checks.nix {
-              inherit name pkgs;
+              inherit pkgName pkgs;
               inherit (self.packages.${system}) stripped wasm;
             };
             helpers = with pkgs; [ direnv jq ];
@@ -82,18 +85,19 @@
               name = "wasm-all";
               src = ./.;
               installPhase = ''
-                mkdir -p $out/bin $out/share
-                cp ${wasmPkgs.wasm}/bin/${name}.wasm $out/bin
-                cp ${wasmPkgs.wat}/share/${name}.wat $out/share
-                cp ${wasmPkgs.opcode}/share/${name}.dist $out/share
-                cp ${wasmPkgs.stripped}/bin/${name}-stripped.wasm $out/bin
+                mkdir -p $out/lib $out/share
+                cp ${wasmPkgs.wasm}/lib/${pkgName}.wasm $out/lib
+                cp ${wasmPkgs.stripped}/lib/${pkgName}-stripped.wasm $out/lib
+                cp ${wasmPkgs.wat}/share/${pkgName}.wat $out/share
+                cp ${wasmPkgs.opcode}/share/${pkgName}.dist $out/share
               '';
             };
 
           # Generate Wasm binary using Rust
           wasm = pkgs.buildRustWasiWasm {
-            inherit name;
+            name = pkgName;
             src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
           };
 
           # Generate WAT file (WebAssembly Text Format)
@@ -102,11 +106,11 @@
             src = ./.;
             buildInputs = with pkgs; [ wabt ];
             buildPhase = ''
-              wasm2wat ${wasmPkgs.wasm}/bin/${name}.wasm > ${name}.wat
+              wasm2wat ${wasmPkgs.wasm}/lib/${pkgName}.wasm > ${pkgName}.wat
             '';
             installPhase = ''
               mkdir -p $out/share
-              cp ${name}.wat $out/share
+              cp ${pkgName}.wat $out/share
             '';
           };
 
@@ -115,11 +119,11 @@
             src = ./.;
             buildInputs = with pkgs; [ wabt ];
             buildPhase = ''
-              wasm-opcodecnt ${wasmPkgs.wasm}/bin/${name}.wasm -o ${name}.dist
+              wasm-opcodecnt ${wasmPkgs.wasm}/lib/${pkgName}.wasm -o ${pkgName}.dist
             '';
             installPhase = ''
               mkdir -p $out/share
-              cp ${name}.dist $out/share
+              cp ${pkgName}.dist $out/share
             '';
           };
 
@@ -128,11 +132,11 @@
             src = ./.;
             buildInputs = with pkgs; [ wabt ];
             buildPhase = ''
-              wasm-strip ${wasmPkgs.wasm}/bin/${name}.wasm -o ${name}-stripped.wasm
+              wasm-strip ${wasmPkgs.wasm}/lib/${pkgName}.wasm -o ${pkgName}-stripped.wasm
             '';
             installPhase = ''
-              mkdir -p $out/bin
-              cp ${name}-stripped.wasm $out/bin
+              mkdir -p $out/lib
+              cp ${pkgName}-stripped.wasm $out/lib
             '';
           };
         });

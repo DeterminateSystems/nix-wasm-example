@@ -1,4 +1,4 @@
-{ name
+{ pkgName
 , pkgs
 , stripped
 , wasm
@@ -7,8 +7,8 @@
 let
   wasmValidate = "${pkgs.wabt}/bin/wasm-validate";
   wasmtime = "${pkgs.wasmtime}/bin/wasmtime";
-  wasmFile = "${wasm}/bin/${name}.wasm";
-  strippedWasmFile = "${stripped}/bin/${name}-stripped.wasm";
+  wasmFile = "${wasm}/lib/${pkgName}.wasm";
+  strippedWasmFile = "${stripped}/lib/${pkgName}-stripped.wasm";
   mkBin = name: text: pkgs.writeShellApplication { inherit name text; };
 in
 [
