@@ -20,8 +20,24 @@
 
       overlays = [
         rust-overlay.overlays.default
-        (self: super: {
+        (self: super: rec {
           rustToolchain = super.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+
+          buildRustWasiWasm = { name, src, bin ? name }:
+            let
+              target = "wasm32-wasi";
+            in
+            super.stdenv.mkDerivation {
+              inherit name src;
+              buildInputs = [ rustToolchain ];
+              buildPhase = ''
+                cargo build --target ${target} --release
+              '';
+              installPhase = ''
+                mkdir -p $out/bin
+                cp target/${target}/release/${bin}.wasm $out/bin
+              '';
+            };
         })
       ];
       supportedSystems = [
@@ -75,22 +91,10 @@
             };
 
           # Generate Wasm binary using Rust
-          wasm =
-            let
-              target = "wasm32-wasi";
-            in
-            pkgs.stdenv.mkDerivation {
-              inherit name;
-              src = ./.;
-              buildInputs = with pkgs; [ rustToolchain ];
-              buildPhase = ''
-                cargo build --target ${target} --release
-              '';
-              installPhase = ''
-                mkdir -p $out/bin
-                cp target/${target}/release/${name}.wasm $out/bin
-              '';
-            };
+          wasm = pkgs.buildRustWasiWasm {
+            inherit name;
+            src = ./.;
+          };
 
           # Generate WAT file (WebAssembly Text Format)
           wat = pkgs.stdenv.mkDerivation {
