@@ -110,7 +110,7 @@
           };
 
           hello-wasm-edge = pkgs.stdenv.mkDerivation rec {
-            name = "hello-wasm";
+            name = "hello-wasm-edge";
             nativeBuildInputs = with pkgs; [ makeWrapper ];
             src = ./.;
             installPhase = ''
