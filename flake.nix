@@ -95,10 +95,17 @@
               '';
             };
 
-          hello-wasm = pkgs.writeShellApplication {
+          hello-wasm = pkgs.stdenv.mkDerivation rec {
             name = "hello-wasm";
-            text = ''
-              ${pkgs.wasmtime}/bin/wasmtime ${wasmPkgs.wasm}/lib/${pkgName}.wasm "''${@}"
+            nativeBuildInputs = with pkgs; [ makeWrapper ];
+            buildInputs = with pkgs; [ wasmtime ];
+            src = ./.;
+            installPhase = ''
+              mkdir -p $out/bin $out/lib
+              cp ${wasmPkgs.wasm}/lib/${pkgName}.wasm $out/lib
+              makeWrapper ${pkgs.wasmtime}/bin/wasmtime $out/bin/${name} \
+                --add-flags "$out/lib/${pkgName}.wasm" \
+                --add-flags "--"
             '';
           };
 
