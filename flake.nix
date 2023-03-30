@@ -20,27 +20,11 @@
       overlays = [
         # Provides a `rust-bin` attribute I can use to build a custom Rust toolchain
         rust-overlay.overlays.default
-        (self: super: rec {
-          rustToolchain = super.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
-
-          buildRustWasiWasm = { name, src, cargoLock }:
-            let
-              rustPlatform = super.makeRustPlatform {
-                cargo = rustToolchain;
-                rustc = rustToolchain;
-              };
-              target = "wasm32-wasi";
-            in
-            rustPlatform.buildRustPackage {
-              inherit cargoLock name src;
-              buildPhase = ''
-                cargo build --release --target ${target}
-              '';
-              installPhase = ''
-                mkdir -p $out/lib
-                cp target/${target}/release/${pkgName}.wasm $out/lib
-              '';
-            };
+        (final: prev: rec {
+          # Builds a Rust toolchain from rust-toolchain.toml
+          rustToolchain = prev.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+          # Uses the Rust toolchain above to construct a special build function
+          buildRustWasiWasm = self.lib.buildRustWasiWasm final;
         })
       ];
       supportedSystems = [
@@ -93,6 +77,7 @@
                 cp ${wasmPkgs.stripped}/lib/${pkgName}-stripped.wasm $out/lib
                 cp ${wasmPkgs.wat}/share/${pkgName}.wat $out/share
                 cp ${wasmPkgs.opcode}/share/${pkgName}.dist $out/share
+                cp ${wasmPkgs.objdump}/share/${pkgName}-dump.txt $out/share
               '';
             };
 
@@ -129,6 +114,20 @@
           };
 
           # Generate WAT file (WebAssembly Text Format)
+          objdump = pkgs.stdenv.mkDerivation {
+            name = "wasm-into-objdump";
+            src = ./.;
+            buildInputs = with pkgs; [ wabt ];
+            buildPhase = ''
+              wasm-objdump \
+                --details ${wasmPkgs.wasm}/lib/${pkgName}.wasm > ${pkgName}-dump.txt
+            '';
+            installPhase = ''
+              mkdir -p $out/share
+              cp ${pkgName}-dump.txt $out/share
+            '';
+          };
+
           wat = pkgs.stdenv.mkDerivation {
             name = "wasm-into-wat";
             src = ./.;
@@ -172,6 +171,25 @@
       lib = {
         # Helper function for reading TOML files
         fromToml = file: builtins.fromTOML (builtins.readFile file);
+
+        buildRustWasiWasm = pkgs: { name, src, cargoLock }:
+          let
+            rustPlatform = pkgs.makeRustPlatform {
+              cargo = pkgs.rustToolchain;
+              rustc = pkgs.rustToolchain;
+            };
+            target = "wasm32-wasi";
+          in
+          rustPlatform.buildRustPackage {
+            inherit cargoLock name src;
+            buildPhase = ''
+              cargo build --release --target ${target}
+            '';
+            installPhase = ''
+              mkdir -p $out/lib
+              cp target/${target}/release/${pkgName}.wasm $out/lib
+            '';
+          };
       };
     };
 }
