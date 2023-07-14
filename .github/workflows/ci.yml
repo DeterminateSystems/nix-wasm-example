@@ -16,13 +16,14 @@ jobs:
     steps:
       - name: git checkout
         uses: actions/checkout@v3
-      - uses: DeterminateSystems/nix-installer-action@v1
+      - uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: |
             binary-caches = https://cache.nixos.org https://${{ secrets.CACHIX_CACHE }}.cachix.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ${{ secrets.CACHIX_TRUSTED_PUBLIC_KEY }}
             trusted-substituters = https://cache.nixos.org https://${{ secrets.CACHIX_CACHE }}.cachix.org
             trusted-users = root runner
+      - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Set up Nix environment
         run: |
           nix develop --command direnv allow
