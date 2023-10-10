@@ -2,7 +2,7 @@
   description = "Nix + WebAssembly example project";
 
   inputs = {
-    nixpkgs.url = "nixpkgs";
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2305.491476.tar.gz";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
