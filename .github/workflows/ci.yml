@@ -44,7 +44,5 @@ jobs:
 
       - name: Run full test suite
         run: |
-          nix develop --command validate-wasm
-          nix develop --command validate-stripped-wasm
           nix develop --command run-wasm
           nix develop --command run-wasm-stripped

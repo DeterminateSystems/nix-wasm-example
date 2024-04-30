@@ -74,7 +74,10 @@
             pkgs.stdenv.mkDerivation {
               name = "wasm-all";
               src = self;
-              installPhase = ''
+              buildInputs = with pkgs; [
+                wabt # includes wasm-validate
+              ];
+              buildPhase = ''
                 mkdir -p $out/lib $out/share
                 cp ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm $out/lib
                 cp ${wasmPkgs.stripped}/lib/${pkgName}-stripped.wasm $out/lib
@@ -82,6 +85,11 @@
                 cp ${wasmPkgs.stats}/share/${pkgName}.dist $out/share
                 cp ${wasmPkgs.objdump}/share/${pkgName}-dump.txt $out/share
               '';
+              checkPhase = ''
+                wasm-validate $out/lib/${pkgName}.wasm
+                wasm-validate $out/lib/${pkgName}-stripped.wasm
+              '';
+              doCheck = true;
             };
 
           hello-wasm = pkgs.stdenv.mkDerivation rec {
@@ -191,8 +199,3 @@
       };
     };
 }
-
-
-
-
-
