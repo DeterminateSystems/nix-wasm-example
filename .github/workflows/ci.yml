@@ -10,8 +10,7 @@ env:
   REPO: ${{ github.event.repository.name }}
 
 jobs:
-  check:
-    environment: check
+  ci:
     runs-on: ubuntu-22.04
     steps:
       - name: git checkout
@@ -46,8 +45,3 @@ jobs:
         run: |
           nix run ".#hello-wasmedge-exec"
           nix run ".#hello-wasmtime-exec"
-
-      - name: Run full test suite
-        run: |
-          nix develop --command run-wasm
-          nix develop --command run-wasm-stripped

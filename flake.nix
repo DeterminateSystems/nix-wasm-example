@@ -90,7 +90,6 @@
           { name ? null
           , src ? self
           , cargoToml ? ./Cargo.toml
-          , cargoLock ? ./Cargo.lock
           }:
           let
             meta = (self.lib.fromToml ./Cargo.toml).package;
@@ -101,10 +100,10 @@
             inherit (meta) name;
             inherit pkgName;
             src = pkgSrc;
-            inherit cargoToml cargoLock;
+            inherit cargoToml;
           };
 
-        buildRustWasiWasm = pkgs: { name, src, cargoLock }:
+        buildRustWasiWasm = pkgs: { name, src }:
           let
             naerskLib = pkgs.callPackage inputs.naersk {
               cargo = pkgs.rustToolchain;
@@ -114,26 +113,24 @@
           naerskLib.buildPackage {
             inherit name src;
             CARGO_BUILD_TARGET = rustWasmTarget;
+            buildInputs = with pkgs; [ wabt ];
+            postInstall = ''
+              wasm-validate $out/bin/${name}.wasm
+            '';
           };
 
-        buildRustWasmtimeExec =
-          pkgs:
-          { name ? null
-          , src ? self
-          , cargoToml ? ./Cargo.toml
-          , cargoLock ? ./Cargo.lock
-          }@args:
-
+        buildRustWasmtimeExec = pkgs: args:
           let
             finalArgs = self.lib.handleArgs args;
             wasmPkg = self.lib.buildRustWasiWasm pkgs {
-              inherit (finalArgs) name src cargoLock;
+              inherit (finalArgs) name src;
             };
           in
           pkgs.stdenv.mkDerivation rec {
             name = finalArgs.name;
             src = finalArgs.src;
             nativeBuildInputs = with pkgs; [ makeWrapper ];
+            # TODO: bring in accordance with the new Wasmtime interface (WASMTIME_NEW_CLI=1)
             installPhase = ''
               mkdir -p $out/lib
               cp ${wasmPkg}/bin/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
@@ -144,18 +141,12 @@
             '';
           };
 
-        buildRustWasmEdgeExec =
-          pkgs:
-          { name ? null
-          , src ? self
-          , cargoToml ? ./Cargo.toml
-          , cargoLock ? ./Cargo.lock
-          }@args:
+        buildRustWasmEdgeExec = pkgs: args:
 
           let
             finalArgs = self.lib.handleArgs args;
             wasmPkg = self.lib.buildRustWasiWasm pkgs {
-              inherit (finalArgs) name src cargoLock;
+              inherit (finalArgs) name src;
             };
           in
           pkgs.stdenv.mkDerivation rec {
@@ -170,18 +161,11 @@
             '';
           };
 
-        buildRustWasmPackage =
-          pkgs:
-          { name ? null
-          , src ? self
-          , cargoToml ? ./Cargo.toml
-          , cargoLock ? ./Cargo.lock
-          }@args:
-
+        buildRustWasmPackage = pkgs: args:
           let
             finalArgs = self.lib.handleArgs args;
             wasmPkg = self.lib.buildRustWasiWasm pkgs {
-              inherit (finalArgs) name src cargoLock;
+              inherit (finalArgs) name src;
             };
           in
           pkgs.stdenv.mkDerivation {
