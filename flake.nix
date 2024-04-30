@@ -75,17 +75,11 @@
         rec {
           default = hello-wasm-pkg;
 
-          hello-wasm-pkg = pkgs.buildRustWasmPackage {
-            name = "hello-wasm-pkg";
-          };
+          hello-wasm-pkg = pkgs.buildRustWasmPackage { };
 
-          hello-wasmtime-exec = pkgs.buildRustWasmtimeExec {
-            name = "hello-wasmtime-exec";
-          };
+          hello-wasmtime-exec = pkgs.buildRustWasmtimeExec { };
 
-          hello-wasmedge-exec = pkgs.buildRustWasmEdgeExec {
-            name = "hello-wasmedge-exec";
-          };
+          hello-wasmedge-exec = pkgs.buildRustWasmEdgeExec { };
         });
 
       lib = inputs.nixpkgs.lib // {
@@ -144,11 +138,10 @@
               mkdir -p $out/lib
               cp ${wasmPkg}/bin/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
               makeWrapper ${pkgs.wasmtime}/bin/wasmtime $out/bin/${finalArgs.pkgName} \
+                --set WASMTIME_NEW_CLI 0 \
                 --add-flags "$out/lib/${finalArgs.pkgName}.wasm" \
                 --add-flags "--"
             '';
-            # TODO: bring in accordance with the new semantics
-            WASMTIME_NEW_CLI = 0;
           };
 
         buildRustWasmEdgeExec =
