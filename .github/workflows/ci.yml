@@ -27,13 +27,13 @@ jobs:
       - name: Set up Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v4
 
-      #- name: nix flake check
-      #  run: |
-      #    nix flake check --all-systems --no-build
+      - name: nix flake check
+        run: |
+          nix flake check --no-build
 
       - name: Build all packages
         run: |
-          for pkg in wasm-all hello-wasm hello-wasm-edge wasm-rust objdump wat opcode stripped; do
+          for pkg in wasm-all hello-wasm hello-wasm-edge wasm-rust objdump wat stats stripped; do
             nix build ".#${pkg}"
           done
 
