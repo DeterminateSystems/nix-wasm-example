@@ -27,6 +27,10 @@ jobs:
       - name: Set up Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v4
 
+      - name: nix flake check
+        run: |
+          nix flake check --all-systems --no-build
+
       - name: Build all packages
         run: |
           for pkg in wasm-all hello-wasm hello-wasm-edge wasm-rust objdump wat opcode stripped; do
@@ -37,5 +41,5 @@ jobs:
         run: |
           nix develop --command validate-wasm
           nix develop --command validate-stripped-wasm
-          nix develop --command run-wasm -- --name "Nix enthusiast"
-          nix develop --command run-wasm-stripped -- --name "Nix enthusiast"
+          nix develop --command run-wasm
+          nix develop --command run-wasm-stripped
