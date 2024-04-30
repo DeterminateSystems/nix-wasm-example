@@ -62,19 +62,12 @@
           };
       });
 
-      packages = forAllSystems ({ pkgs, system }:
-        let
-          wasmPkgs = self.packages.${system};
-        in
-        rec {
-          default = hello-wasm-pkg;
-
-          hello-wasm-pkg = pkgs.buildRustWasmPackage { };
-
-          hello-wasmtime-exec = pkgs.buildRustWasmtimeExec { };
-
-          hello-wasmedge-exec = pkgs.buildRustWasmEdgeExec { };
-        });
+      packages = forAllSystems ({ pkgs, system }: rec {
+        default = hello-wasm-pkg;
+        hello-wasm-pkg = pkgs.buildRustWasmPackage { };
+        hello-wasmtime-exec = pkgs.buildRustWasmtimeExec { };
+        hello-wasmedge-exec = pkgs.buildRustWasmEdgeExec { };
+      });
 
       lib = {
         # Helper function for reading TOML files
