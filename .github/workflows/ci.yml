@@ -31,6 +31,11 @@ jobs:
         run: |
           nix flake check --no-build
 
+      - name: Display package contents
+        run: |
+          nix build ".#wasm-all"
+          nix develop --command tree ./result
+
       - name: Build all packages
         run: |
           for pkg in wasm-all hello-wasm hello-wasm-edge wasm-rust objdump wat stats stripped; do

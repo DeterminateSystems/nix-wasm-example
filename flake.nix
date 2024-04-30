@@ -58,6 +58,7 @@
               wasmedge # Wasm runtime
               wasmtime # Wasm runtime
               cargo-edit # cargo add, cargo rm, etc.
+              tree # for visualizing results
             ]);
           };
       });
