@@ -83,12 +83,6 @@ This generates several files in `result`[^1]:
 * `share/hello-wasm.dist` (the [stats] file)
 * `share/hello-wasm.wat` (the human-readable [WAT] file)
 
-### Test
-
-```shell
-run-test-suite
-```
-
 ### Run
 
 ```shell
