@@ -33,14 +33,19 @@ jobs:
 
       - name: Display package contents
         run: |
-          nix build ".#wasm-all"
+          nix build ".#hello-wasm-pkg"
           nix develop --command tree ./result
 
       - name: Build all packages
         run: |
-          for pkg in wasm-all hello-wasm hello-wasm-edge wasm-rust objdump wat stats stripped; do
+          for pkg in hello-wasm-pkg hello-wasmedge-exec hello-wasmtime-exec; do
             nix build ".#${pkg}"
           done
+
+      - name: Run scripts
+        run: |
+          nix run ".#hello-wasmedge-exec"
+          nix run ".#hello-wasmtime-exec"
 
       - name: Run full test suite
         run: |

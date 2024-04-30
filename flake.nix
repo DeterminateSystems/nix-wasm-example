@@ -39,6 +39,11 @@
 
         # Uses the Rust toolchain above to construct a special build function
         buildRustWasiWasm = self.lib.buildRustWasiWasm final;
+
+        buildRustWasmPackage = self.lib.buildRustWasmPackage final;
+        buildRustWasmScript = self.lib.buildRustWasmScript final;
+        buildRustWasmEdgeExec = self.lib.buildRustWasmEdgeExec final;
+        buildRustWasmtimeExec = self.lib.buildRustWasmtimeExec final;
       };
 
       # Development environments
@@ -47,7 +52,7 @@
           let
             checks = import ./nix/checks.nix {
               inherit pkgName pkgs;
-              inherit (self.packages.${system}) stripped wasm-rust;
+              wasm-pkg = self.packages.${system}.hello-wasm-pkg;
             };
             helpers = with pkgs; [ direnv jq ];
           in
@@ -68,122 +73,42 @@
           wasmPkgs = self.packages.${system};
         in
         rec {
-          default = wasm-all;
+          default = hello-wasm-pkg;
 
-          wasm-all =
-            pkgs.stdenv.mkDerivation {
-              name = "wasm-all";
-              src = self;
-              buildInputs = with pkgs; [
-                wabt # includes wasm-validate
-              ];
-              buildPhase = ''
-                mkdir -p $out/lib $out/share
-                cp ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm $out/lib
-                cp ${wasmPkgs.stripped}/lib/${pkgName}-stripped.wasm $out/lib
-                cp ${wasmPkgs.wat}/share/${pkgName}.wat $out/share
-                cp ${wasmPkgs.stats}/share/${pkgName}.dist $out/share
-                cp ${wasmPkgs.objdump}/share/${pkgName}-dump.txt $out/share
-              '';
-              checkPhase = ''
-                wasm-validate $out/lib/${pkgName}.wasm
-                wasm-validate $out/lib/${pkgName}-stripped.wasm
-              '';
-              doCheck = true;
-            };
-
-          hello-wasm = pkgs.stdenv.mkDerivation rec {
-            name = "hello-wasm";
-            nativeBuildInputs = with pkgs; [ makeWrapper ];
-            src = self;
-            installPhase = ''
-              mkdir -p $out/bin $out/lib
-              cp ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm $out/lib
-              makeWrapper ${pkgs.wasmtime}/bin/wasmtime $out/bin/${name} \
-                --add-flags "$out/lib/${pkgName}.wasm" \
-                --add-flags "--"
-            '';
+          hello-wasm-pkg = pkgs.buildRustWasmPackage {
+            name = "hello-wasm-pkg";
           };
 
-          hello-wasm-edge = pkgs.stdenv.mkDerivation rec {
-            name = "hello-wasm-edge";
-            nativeBuildInputs = with pkgs; [ makeWrapper ];
-            src = self;
-            installPhase = ''
-              mkdir -p $out/bin $out/lib
-              cp ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm $out/lib
-              makeWrapper ${pkgs.wasmedge}/bin/wasmedge $out/bin/${name} \
-                --add-flags "$out/lib/${pkgName}.wasm"
-            '';
+          hello-wasmtime-exec = pkgs.buildRustWasmtimeExec {
+            name = "hello-wasmtime-exec";
           };
 
-          # Generate Wasm binary using Rust
-          wasm-rust = pkgs.buildRustWasiWasm {
-            name = pkgName;
-            src = ./.;
-            cargoLock.lockFile = ./Cargo.lock;
-          };
-
-          objdump = pkgs.stdenv.mkDerivation {
-            name = "wasm-into-objdump";
-            src = ./.;
-            buildInputs = with pkgs; [ wabt ];
-            buildPhase = ''
-              wasm-objdump \
-                --details ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm > ${pkgName}-dump.txt
-            '';
-            installPhase = ''
-              mkdir -p $out/share
-              cp ${pkgName}-dump.txt $out/share
-            '';
-          };
-
-          # Generate WAT file (WebAssembly Text Format)
-          wat = pkgs.stdenv.mkDerivation {
-            name = "wasm-into-wat";
-            src = ./.;
-            buildInputs = with pkgs; [ wabt ];
-            buildPhase = ''
-              wasm2wat ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm > ${pkgName}.wat
-            '';
-            installPhase = ''
-              mkdir -p $out/share
-              cp ${pkgName}.wat $out/share
-            '';
-          };
-
-          stats = pkgs.stdenv.mkDerivation {
-            name = "wasm-stats";
-            src = ./.;
-            buildInputs = with pkgs; [
-              wabt # includes wasm-stats
-            ];
-            buildPhase = ''
-              wasm-stats ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm -o ${pkgName}.dist
-            '';
-            installPhase = ''
-              mkdir -p $out/share
-              cp ${pkgName}.dist $out/share
-            '';
-          };
-
-          stripped = pkgs.stdenv.mkDerivation {
-            name = "wasm-stripped";
-            src = ./.;
-            buildInputs = with pkgs; [ wabt ];
-            buildPhase = ''
-              wasm-strip ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm -o ${pkgName}-stripped.wasm
-            '';
-            installPhase = ''
-              mkdir -p $out/lib
-              cp ${pkgName}-stripped.wasm $out/lib
-            '';
+          hello-wasmedge-exec = pkgs.buildRustWasmEdgeExec {
+            name = "hello-wasmedge-exec";
           };
         });
 
       lib = inputs.nixpkgs.lib // {
         # Helper function for reading TOML files
         fromToml = file: builtins.fromTOML (builtins.readFile file);
+
+        handleArgs =
+          { name ? null
+          , src ? self
+          , cargoToml ? ./Cargo.toml
+          , cargoLock ? ./Cargo.lock
+          }:
+          let
+            meta = (self.lib.fromToml ./Cargo.toml).package;
+            pkgName = if name == null then meta.name else name;
+            pkgSrc = builtins.path { path = src; name = "${pkgName}-source"; };
+          in
+          {
+            inherit (meta) name;
+            inherit pkgName;
+            src = pkgSrc;
+            inherit cargoToml cargoLock;
+          };
 
         buildRustWasiWasm = pkgs: { name, src, cargoLock }:
           let
@@ -195,6 +120,98 @@
           naerskLib.buildPackage {
             inherit name src;
             CARGO_BUILD_TARGET = rustWasmTarget;
+          };
+
+        buildRustWasmtimeExec =
+          pkgs:
+          { name ? null
+          , src ? self
+          , cargoToml ? ./Cargo.toml
+          , cargoLock ? ./Cargo.lock
+          }@args:
+
+          let
+            finalArgs = self.lib.handleArgs args;
+            wasmPkg = self.lib.buildRustWasiWasm pkgs {
+              inherit (finalArgs) name src cargoLock;
+            };
+          in
+          pkgs.stdenv.mkDerivation rec {
+            name = finalArgs.name;
+            src = finalArgs.src;
+            nativeBuildInputs = with pkgs; [ makeWrapper ];
+            installPhase = ''
+              mkdir -p $out/lib
+              cp ${wasmPkg}/bin/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
+              makeWrapper ${pkgs.wasmtime}/bin/wasmtime $out/bin/${finalArgs.pkgName} \
+                --add-flags "$out/lib/${finalArgs.pkgName}.wasm" \
+                --add-flags "--"
+            '';
+            # TODO: bring in accordance with the new semantics
+            WASMTIME_NEW_CLI = 0;
+          };
+
+        buildRustWasmEdgeExec =
+          pkgs:
+          { name ? null
+          , src ? self
+          , cargoToml ? ./Cargo.toml
+          , cargoLock ? ./Cargo.lock
+          }@args:
+
+          let
+            finalArgs = self.lib.handleArgs args;
+            wasmPkg = self.lib.buildRustWasiWasm pkgs {
+              inherit (finalArgs) name src cargoLock;
+            };
+          in
+          pkgs.stdenv.mkDerivation rec {
+            name = finalArgs.name;
+            src = finalArgs.src;
+            nativeBuildInputs = with pkgs; [ makeWrapper ];
+            installPhase = ''
+              mkdir -p $out/lib
+              cp ${wasmPkg}/bin/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
+              makeWrapper ${pkgs.wasmedge}/bin/wasmedge $out/bin/${finalArgs.pkgName} \
+                --add-flags "$out/lib/${finalArgs.pkgName}.wasm"
+            '';
+          };
+
+        buildRustWasmPackage =
+          pkgs:
+          { name ? null
+          , src ? self
+          , cargoToml ? ./Cargo.toml
+          , cargoLock ? ./Cargo.lock
+          }@args:
+
+          let
+            finalArgs = self.lib.handleArgs args;
+            wasmPkg = self.lib.buildRustWasiWasm pkgs {
+              inherit (finalArgs) name src cargoLock;
+            };
+          in
+          pkgs.stdenv.mkDerivation {
+            name = finalArgs.name;
+            src = finalArgs.src;
+            buildInputs = with pkgs; [
+              # includes wasm-strip, wasm2wat, wasm-stats, wasm-objdump, and wasm-validate
+              wabt
+            ];
+            buildPhase = ''
+              mkdir -p $out/{lib,share}
+              cp ${wasmPkg}/bin/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
+              wasm-strip $out/lib/${finalArgs.pkgName}.wasm -o $out/lib/${finalArgs.pkgName}-stripped.wasm
+              wasm2wat $out/lib/${finalArgs.pkgName}.wasm > $out/share/${finalArgs.pkgName}.wat
+              wasm-stats $out/lib/${finalArgs.pkgName}.wasm -o $out/share/${finalArgs.pkgName}.dist
+              wasm-objdump \
+                --details $out/lib/${finalArgs.pkgName}.wasm > $out/share/${finalArgs.pkgName}-dump.txt
+            '';
+            checkPhase = ''
+              wasm-validate $out/lib/${finalArgs.pkgName}.wasm
+              wasm-validate $out/lib/${finalArgs.pkgName}-stripped.wasm
+            '';
+            doCheck = true;
           };
       };
     };

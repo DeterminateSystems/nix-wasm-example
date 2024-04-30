@@ -1,13 +1,12 @@
 { pkgName
 , pkgs
-, stripped
-, wasm-rust
+, wasm-pkg
 }:
 
 let
   wasmtime = "${pkgs.wasmtime}/bin/wasmtime";
-  wasmFile = "${wasm-rust}/bin/${pkgName}.wasm";
-  strippedWasmFile = "${stripped}/lib/${pkgName}-stripped.wasm";
+  wasmFile = "${wasm-pkg}/bin/${pkgName}.wasm";
+  strippedWasmFile = "${wasm-pkg}/lib/${pkgName}-stripped.wasm";
 
   # Make basic script
   mkBin = name: text: pkgs.writeShellApplication { inherit name text; };
@@ -22,4 +21,3 @@ in
   # Ensure that the stripped version of the binary can be run
   (mkCli "run-wasm-stripped" "${wasmtime} ${strippedWasmFile}")
 ]
-
