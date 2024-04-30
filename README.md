@@ -39,6 +39,13 @@ nix build ".#stripped"
 
 This generates a [stripped] Wasm binary at `result/bin/nix-wasm-example-stripped.wasm`.
 
+### Generate [stats]
+
+```shell
+nix build ".#stats"
+```
+
+This generates a `.dist` file at `result/share/nix-wasm-example.dist`.
 
 ### Build a WebAssembly text format ([WAT]) file
 
@@ -61,7 +68,7 @@ This generates several files in `result`[^1]:
 
 * `bin/nix-wasm-example.wasm` (the raw binary)
 * `bin/nix-wasm-example-stripped.wasm` (the [stripped] version of the binary)
-* `share/nix-wasm-example.dist` (the [opcode] file)
+* `share/nix-wasm-example.dist` (the [stats] file)
 * `share/nix-wasm-example.wat` (the human-readable [WAT] file)
 
 ### Test
@@ -96,8 +103,8 @@ validate-wasm
 [dni]: https://github.com/DeterminateSystems/nix-installer
 [flakes]: https://zero-to-nix.com/concepts/flakes
 [nix]: https://zero-to-nix.com
-[opcode]: https://pengowray.github.io/wasm-ops
 [rust]: https://rust-lang.org
+[stats]: https://pengowray.github.io/wasm-ops
 [store]: https://zero-to-nix.com/concepts/nix-store
 [stripped]: https://webassembly.github.io/wabt/doc/wasm-strip.1.html
 [wasm]: https://webassembly.org
