@@ -19,7 +19,7 @@
     let
       pkgName = (self.lib.fromToml ./Cargo.toml).package.name;
       supportedSystems = [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];
-      forAllSystems = f: self.lib.genAttrs supportedSystems (system: f {
+      forAllSystems = f: inputs.nixpkgs.lib.genAttrs supportedSystems (system: f {
         pkgs = import inputs.nixpkgs { inherit system; overlays = [ self.overlays.default ]; };
         inherit system;
       });
@@ -37,9 +37,7 @@
             targets.${rustWasmTarget}.latest.rust-std
           ];
 
-        # Uses the Rust toolchain above to construct a special build function
         buildRustWasiWasm = self.lib.buildRustWasiWasm final;
-
         buildRustWasmPackage = self.lib.buildRustWasmPackage final;
         buildRustWasmScript = self.lib.buildRustWasmScript final;
         buildRustWasmEdgeExec = self.lib.buildRustWasmEdgeExec final;
@@ -50,14 +48,10 @@
       devShells = forAllSystems ({ pkgs, system }: {
         default =
           let
-            checks = import ./nix/checks.nix {
-              inherit pkgName pkgs;
-              wasm-pkg = self.packages.${system}.hello-wasm-pkg;
-            };
             helpers = with pkgs; [ direnv jq ];
           in
           pkgs.mkShell {
-            packages = helpers ++ checks ++ (with pkgs; [
+            packages = helpers ++ (with pkgs; [
               rustToolchain # cargo, etc.
               wabt # WebAssembly Binary Toolkit
               wasmedge # Wasm runtime
@@ -82,7 +76,7 @@
           hello-wasmedge-exec = pkgs.buildRustWasmEdgeExec { };
         });
 
-      lib = inputs.nixpkgs.lib // {
+      lib = {
         # Helper function for reading TOML files
         fromToml = file: builtins.fromTOML (builtins.readFile file);
 
@@ -142,7 +136,6 @@
           };
 
         buildRustWasmEdgeExec = pkgs: args:
-
           let
             finalArgs = self.lib.handleArgs args;
             wasmPkg = self.lib.buildRustWasiWasm pkgs {
