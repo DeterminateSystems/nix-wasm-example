@@ -2,56 +2,58 @@
   description = "Nix + WebAssembly example project";
 
   inputs = {
-    nixpkgs.url = "nixpkgs";
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2311.*.tar.gz";
+    fenix = {
+      url = "https://flakehub.com/f/nix-community/fenix/0.1.*.tar.gz";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    naersk = {
+      url = "https://flakehub.com/f/nix-community/naersk/0.1.*.tar.gz";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/*.tar.gz";
+    flake-schemas.url = "https://flakehub.com/f/DeterminateSystems/flake-schemas/*.tar.gz";
   };
 
-  outputs =
-    { self
-    , nixpkgs
-    , rust-overlay
-    }:
+  outputs = { self, ... }@inputs:
     let
       pkgName = (self.lib.fromToml ./Cargo.toml).package.name;
-
-      overlays = [
-        # Provides a `rust-bin` attribute I can use to build a custom Rust toolchain
-        rust-overlay.overlays.default
-        (final: prev: rec {
-          # Builds a Rust toolchain from rust-toolchain.toml
-          rustToolchain = prev.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
-          # Uses the Rust toolchain above to construct a special build function
-          buildRustWasiWasm = self.lib.buildRustWasiWasm final;
-        })
-      ];
-      supportedSystems = [
-        "aarch64-darwin"
-        "aarch64-linux"
-        "x86_64-darwin"
-        "x86_64-linux"
-      ];
-      forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
-        pkgs = import nixpkgs { inherit overlays system; };
+      supportedSystems = [ "aarch64-darwin" "aarch64-linux" "x86_64-darwin" "x86_64-linux" ];
+      forAllSystems = f: self.lib.genAttrs supportedSystems (system: f {
+        pkgs = import inputs.nixpkgs { inherit system; overlays = [ self.overlays.default ]; };
         inherit system;
       });
+      rustWasmTarget = "wasm32-wasi";
     in
     {
+      overlays.default = final: prev: rec {
+        system = final.stdenv.hostPlatform.system;
+
+        # Builds a Rust toolchain from rust-toolchain.toml
+        rustToolchain = with inputs.fenix.packages.${system};
+          combine [
+            latest.rustc
+            latest.cargo
+            targets.${rustWasmTarget}.latest.rust-std
+          ];
+
+        # Uses the Rust toolchain above to construct a special build function
+        buildRustWasiWasm = self.lib.buildRustWasiWasm final;
+      };
+
+      # Development environments
       devShells = forAllSystems ({ pkgs, system }: {
         default =
           let
             checks = import ./nix/checks.nix {
               inherit pkgName pkgs;
-              inherit (self.packages.${system}) stripped wasm;
+              inherit (self.packages.${system}) stripped wasm-rust;
             };
             helpers = with pkgs; [ direnv jq ];
           in
           pkgs.mkShell {
             packages = helpers ++ checks ++ (with pkgs; [
               rustToolchain # cargo, etc.
-              cachix # Binary caching
               wabt # WebAssembly Binary Toolkit
               wasmedge # Wasm runtime
               wasmtime # Wasm runtime
@@ -65,18 +67,18 @@
           wasmPkgs = self.packages.${system};
         in
         rec {
-          default = all;
+          default = wasm-all;
 
-          all =
+          wasm-all =
             pkgs.stdenv.mkDerivation {
               name = "wasm-all";
-              src = ./.;
+              src = self;
               installPhase = ''
                 mkdir -p $out/lib $out/share
-                cp ${wasmPkgs.wasm}/lib/${pkgName}.wasm $out/lib
+                cp ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm $out/lib
                 cp ${wasmPkgs.stripped}/lib/${pkgName}-stripped.wasm $out/lib
                 cp ${wasmPkgs.wat}/share/${pkgName}.wat $out/share
-                cp ${wasmPkgs.opcode}/share/${pkgName}.dist $out/share
+                cp ${wasmPkgs.stats}/share/${pkgName}.dist $out/share
                 cp ${wasmPkgs.objdump}/share/${pkgName}-dump.txt $out/share
               '';
             };
@@ -84,10 +86,10 @@
           hello-wasm = pkgs.stdenv.mkDerivation rec {
             name = "hello-wasm";
             nativeBuildInputs = with pkgs; [ makeWrapper ];
-            src = ./.;
+            src = self;
             installPhase = ''
               mkdir -p $out/bin $out/lib
-              cp ${wasmPkgs.wasm}/lib/${pkgName}.wasm $out/lib
+              cp ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm $out/lib
               makeWrapper ${pkgs.wasmtime}/bin/wasmtime $out/bin/${name} \
                 --add-flags "$out/lib/${pkgName}.wasm" \
                 --add-flags "--"
@@ -97,17 +99,17 @@
           hello-wasm-edge = pkgs.stdenv.mkDerivation rec {
             name = "hello-wasm-edge";
             nativeBuildInputs = with pkgs; [ makeWrapper ];
-            src = ./.;
+            src = self;
             installPhase = ''
               mkdir -p $out/bin $out/lib
-              cp ${wasmPkgs.wasm}/lib/${pkgName}.wasm $out/lib
+              cp ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm $out/lib
               makeWrapper ${pkgs.wasmedge}/bin/wasmedge $out/bin/${name} \
                 --add-flags "$out/lib/${pkgName}.wasm"
             '';
           };
 
           # Generate Wasm binary using Rust
-          wasm = pkgs.buildRustWasiWasm {
+          wasm-rust = pkgs.buildRustWasiWasm {
             name = pkgName;
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
@@ -120,7 +122,7 @@
             buildInputs = with pkgs; [ wabt ];
             buildPhase = ''
               wasm-objdump \
-                --details ${wasmPkgs.wasm}/lib/${pkgName}.wasm > ${pkgName}-dump.txt
+                --details ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm > ${pkgName}-dump.txt
             '';
             installPhase = ''
               mkdir -p $out/share
@@ -133,7 +135,7 @@
             src = ./.;
             buildInputs = with pkgs; [ wabt ];
             buildPhase = ''
-              wasm2wat ${wasmPkgs.wasm}/lib/${pkgName}.wasm > ${pkgName}.wat
+              wasm2wat ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm > ${pkgName}.wat
             '';
             installPhase = ''
               mkdir -p $out/share
@@ -141,12 +143,14 @@
             '';
           };
 
-          opcode = pkgs.stdenv.mkDerivation {
-            name = "wasm-into-opcode-count";
+          stats = pkgs.stdenv.mkDerivation {
+            name = "wasm-stats";
             src = ./.;
-            buildInputs = with pkgs; [ wabt ];
+            buildInputs = with pkgs; [
+              wabt # includes wasm-stats
+            ];
             buildPhase = ''
-              wasm-opcodecnt ${wasmPkgs.wasm}/lib/${pkgName}.wasm -o ${pkgName}.dist
+              wasm-stats ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm -o ${pkgName}.dist
             '';
             installPhase = ''
               mkdir -p $out/share
@@ -159,7 +163,7 @@
             src = ./.;
             buildInputs = with pkgs; [ wabt ];
             buildPhase = ''
-              wasm-strip ${wasmPkgs.wasm}/lib/${pkgName}.wasm -o ${pkgName}-stripped.wasm
+              wasm-strip ${wasmPkgs.wasm-rust}/bin/${pkgName}.wasm -o ${pkgName}-stripped.wasm
             '';
             installPhase = ''
               mkdir -p $out/lib
@@ -168,28 +172,26 @@
           };
         });
 
-      lib = {
+      lib = inputs.nixpkgs.lib // {
         # Helper function for reading TOML files
         fromToml = file: builtins.fromTOML (builtins.readFile file);
 
         buildRustWasiWasm = pkgs: { name, src, cargoLock }:
           let
-            rustPlatform = pkgs.makeRustPlatform {
+            naerskLib = pkgs.callPackage inputs.naersk {
               cargo = pkgs.rustToolchain;
               rustc = pkgs.rustToolchain;
             };
-            target = "wasm32-wasi";
           in
-          rustPlatform.buildRustPackage {
-            inherit cargoLock name src;
-            buildPhase = ''
-              cargo build --release --target ${target}
-            '';
-            installPhase = ''
-              mkdir -p $out/lib
-              cp target/${target}/release/${pkgName}.wasm $out/lib
-            '';
+          naerskLib.buildPackage {
+            inherit name src;
+            CARGO_BUILD_TARGET = rustWasmTarget;
           };
       };
     };
 }
+
+
+
+
+

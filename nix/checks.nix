@@ -1,13 +1,13 @@
 { pkgName
 , pkgs
 , stripped
-, wasm
+, wasm-rust
 }:
 
 let
   wasmValidate = "${pkgs.wabt}/bin/wasm-validate";
   wasmtime = "${pkgs.wasmtime}/bin/wasmtime";
-  wasmFile = "${wasm}/lib/${pkgName}.wasm";
+  wasmFile = "${wasm-rust}/lib/${pkgName}.wasm";
   strippedWasmFile = "${stripped}/lib/${pkgName}-stripped.wasm";
 
   # Make basic script
@@ -18,7 +18,7 @@ let
 in
 [
   # Ensure that the binary can be run
-  (mkCli "run-wasm" "${wasmtime} ${wasmFile}")
+  (mkCli "run-wasm" "${wasmtime} run ${wasmFile}")
 
   # Ensure that the stripped version of the binary can be run
   (mkCli "run-wasm-stripped" "${wasmtime} ${strippedWasmFile}")

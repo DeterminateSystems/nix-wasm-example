@@ -39,13 +39,6 @@ nix build ".#stripped"
 
 This generates a [stripped] Wasm binary at `result/bin/nix-wasm-example-stripped.wasm`.
 
-### Generate [opcode] usage
-
-```shell
-nix build ".#opcode"
-```
-
-This generates a `.dist` file at `result/share/nix-wasm-example.dist`.
 
 ### Build a WebAssembly text format ([WAT]) file
 

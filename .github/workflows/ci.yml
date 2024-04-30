@@ -16,32 +16,26 @@ jobs:
     steps:
       - name: git checkout
         uses: actions/checkout@v3
-      - uses: DeterminateSystems/nix-installer-action@v1
+      - name: Check Nixpkgs input in flake
+        uses: DeterminateSystems/flake-checker-action@v5
         with:
-          extra-conf: |
-            binary-caches = https://cache.nixos.org https://${{ secrets.CACHIX_CACHE }}.cachix.org
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ${{ secrets.CACHIX_TRUSTED_PUBLIC_KEY }}
-            trusted-substituters = https://cache.nixos.org https://${{ secrets.CACHIX_CACHE }}.cachix.org
-            trusted-users = root runner
-      - name: Set up Nix environment
+          fail-mode: true
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v10
+
+      - name: Set up Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v4
+
+      - name: Build all packages
         run: |
-          nix develop --command direnv allow
-          eval "$(nix develop --command direnv export bash)"
-          echo "$PATH" >> $GITHUB_PATH
-      - name: Binary cache setup
+          for pkg in wasm-all hello-wasm hello-wasm-edge wasm-rust objdump wat opcode stripped; do
+            nix build ".#${pkg}"
+          done
+
+      - name: Run full test suite
         run: |
-          cachix authtoken ${{ secrets.CACHIX_AUTH_TOKEN }}
-          cachix use ${{ secrets.CACHIX_CACHE }}
-      - name: Build all
-        run: nix build -L
-      - name: Run fully test suite
-        run: run-test-suite
-      - name: Cache development environment
-        run: |
-          nix develop --profile ${{ env.REPO }}
-          cachix push ${{ secrets.CACHIX_CACHE }} ${{ env.REPO }}
-      - name: Cache build artifacts
-        run: |
-          nix flake archive --json \
-            | jq -r '.path,(.inputs|to_entries[].value.path)' \
-            | cachix push "${{ secrets.CACHIX_CACHE }}"
+          nix develop --command validate-wasm
+          nix develop --command validate-stripped-wasm
+          nix develop --command run-wasm -- --name "Nix enthusiast"
+          nix develop --command run-wasm-stripped -- --name "Nix enthusiast"
