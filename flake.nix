@@ -2,7 +2,7 @@
   description = "Nix + WebAssembly example project";
 
   inputs = {
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2311.*.tar.gz";
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1.*.tar.gz";
     fenix = {
       url = "https://flakehub.com/f/nix-community/fenix/0.1.*.tar.gz";
       inputs.nixpkgs.follows = "nixpkgs";
