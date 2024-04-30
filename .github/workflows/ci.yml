@@ -27,9 +27,9 @@ jobs:
       - name: Set up Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v4
 
-      #- name: nix flake check
-      #  run: |
-      #    nix flake check --no-build
+      - name: nix flake check
+        run: |
+          nix flake check --all-systems
 
       - name: Display package contents
         run: |

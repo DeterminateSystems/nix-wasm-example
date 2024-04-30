@@ -116,7 +116,6 @@
             cargoLock.lockFile = ./Cargo.lock;
           };
 
-          # Generate WAT file (WebAssembly Text Format)
           objdump = pkgs.stdenv.mkDerivation {
             name = "wasm-into-objdump";
             src = ./.;
@@ -131,6 +130,7 @@
             '';
           };
 
+          # Generate WAT file (WebAssembly Text Format)
           wat = pkgs.stdenv.mkDerivation {
             name = "wasm-into-wat";
             src = ./.;
