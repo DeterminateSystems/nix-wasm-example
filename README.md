@@ -19,17 +19,19 @@ nix develop
 
 > **Note**: This should happen automatically if you have [direnv] installed and run `direnv allow`.
 
-## Actions
+## Packages
+
+Below are some packages you can build in this project.
 
 ### Build Wasm binary
 
 To build a Wasm executable from the [Rust sources](./src/main.rs):
 
 ```shell
-nix build ".#wasm"
+nix build ".#wasm-rust"
 ```
 
-This generates a Wasm binary at `result/bin/nix-wasm-example.wasm`.
+This generates a Wasm binary at `result/bin/hello-wasm.wasm`.
 
 ### Build a [stripped] binary
 
@@ -37,15 +39,15 @@ This generates a Wasm binary at `result/bin/nix-wasm-example.wasm`.
 nix build ".#stripped"
 ```
 
-This generates a [stripped] Wasm binary at `result/bin/nix-wasm-example-stripped.wasm`.
+This generates a [stripped] Wasm binary at `result/bin/hello-wasm-stripped.wasm`.
 
-### Generate [opcode] usage
+### Generate [stats]
 
 ```shell
-nix build ".#opcode"
+nix build ".#stats"
 ```
 
-This generates a `.dist` file at `result/share/nix-wasm-example.dist`.
+This generates a `.dist` file at `result/share/hello-wasm.dist`.
 
 ### Build a WebAssembly text format ([WAT]) file
 
@@ -53,29 +55,33 @@ This generates a `.dist` file at `result/share/nix-wasm-example.dist`.
 nix build ".#wat"
 ```
 
-This generates a human-readable `.wat` file at `result/share/nix-wasm-example.wat`.
+This generates a human-readable `.wat` file at `result/share/hello-wasm.wat`.
+
+### Generate an [object dump][objdump]
+
+```shell
+nix build ".#objdump"
+```
+
+This generates `.txt` file at `result/share/hello-wasm-dump-txt`.
 
 ### Build everything
 
 ```shell
 nix build
 
-# shorthand for:
-nix build ".#all"
+# shorthand for both of these:
+nix build ".#default"
+nix build ".#wasm-all"
 ```
 
 This generates several files in `result`[^1]:
 
-* `bin/nix-wasm-example.wasm` (the raw binary)
-* `bin/nix-wasm-example-stripped.wasm` (the [stripped] version of the binary)
-* `share/nix-wasm-example.dist` (the [opcode] file)
-* `share/nix-wasm-example.wat` (the human-readable [WAT] file)
-
-### Test
-
-```shell
-run-test-suite
-```
+* `bin/hello-wasm.wasm` (the raw binary)
+* `bin/hello-wasm-stripped.wasm` (the [stripped] version of the binary)
+* `share/hello-wasm-dump.txt` (the )
+* `share/hello-wasm.dist` (the [stats] file)
+* `share/hello-wasm.wat` (the human-readable [WAT] file)
 
 ### Run
 
@@ -103,8 +109,9 @@ validate-wasm
 [dni]: https://github.com/DeterminateSystems/nix-installer
 [flakes]: https://zero-to-nix.com/concepts/flakes
 [nix]: https://zero-to-nix.com
-[opcode]: https://pengowray.github.io/wasm-ops
+[objdump]: https://webassembly.github.io/wabt/doc/wasm-objdump.1.html
 [rust]: https://rust-lang.org
+[stats]: https://pengowray.github.io/wasm-ops
 [store]: https://zero-to-nix.com/concepts/nix-store
 [stripped]: https://webassembly.github.io/wabt/doc/wasm-strip.1.html
 [wasm]: https://webassembly.org

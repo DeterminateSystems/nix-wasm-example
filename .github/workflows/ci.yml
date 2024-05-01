@@ -10,39 +10,38 @@ env:
   REPO: ${{ github.event.repository.name }}
 
 jobs:
-  check:
-    environment: check
+  ci:
     runs-on: ubuntu-22.04
     steps:
       - name: git checkout
         uses: actions/checkout@v3
-      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Check Nixpkgs input in flake
+        uses: DeterminateSystems/flake-checker-action@v5
         with:
-          extra-conf: |
-            binary-caches = https://cache.nixos.org https://${{ secrets.CACHIX_CACHE }}.cachix.org
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= ${{ secrets.CACHIX_TRUSTED_PUBLIC_KEY }}
-            trusted-substituters = https://cache.nixos.org https://${{ secrets.CACHIX_CACHE }}.cachix.org
-            trusted-users = root runner
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - name: Set up Nix environment
+          fail-mode: true
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v10
+
+      - name: Set up Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v4
+
+      - name: nix flake check
         run: |
-          nix develop --command direnv allow
-          eval "$(nix develop --command direnv export bash)"
-          echo "$PATH" >> $GITHUB_PATH
-      - name: Binary cache setup
+          nix flake check --all-systems
+
+      - name: Display package contents
         run: |
-          cachix authtoken ${{ secrets.CACHIX_AUTH_TOKEN }}
-          cachix use ${{ secrets.CACHIX_CACHE }}
-      - name: Build all
-        run: nix build -L
-      - name: Run fully test suite
-        run: run-test-suite
-      - name: Cache development environment
+          nix build ".#hello-wasm-pkg"
+          nix develop --command tree ./result
+
+      - name: Build all packages
         run: |
-          nix develop --profile ${{ env.REPO }}
-          cachix push ${{ secrets.CACHIX_CACHE }} ${{ env.REPO }}
-      - name: Cache build artifacts
+          for pkg in hello-wasm-pkg hello-wasmedge-exec hello-wasmtime-exec; do
+            nix build ".#${pkg}"
+          done
+
+      - name: Run scripts
         run: |
-          nix flake archive --json \
-            | jq -r '.path,(.inputs|to_entries[].value.path)' \
-            | cachix push "${{ secrets.CACHIX_CACHE }}"
+          nix run ".#hello-wasmedge-exec"
+          nix run ".#hello-wasmtime-exec"
