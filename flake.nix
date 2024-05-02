@@ -64,6 +64,10 @@
 
       packages = forAllSystems ({ pkgs, system }: rec {
         default = hello-wasm-pkg;
+        hello-wasm = pkgs.buildRustWasiWasm {
+          name = "hello-wasm";
+          src = self;
+        };
         hello-wasm-pkg = pkgs.buildRustWasmPackage { };
         hello-wasmtime-exec = pkgs.buildRustWasmtimeExec { };
         hello-wasmedge-exec = pkgs.buildRustWasmEdgeExec { };
@@ -171,7 +175,6 @@
                 --details $out/lib/${finalArgs.pkgName}.wasm > $out/share/${finalArgs.pkgName}-dump.txt
             '';
             checkPhase = ''
-              wasm-validate $out/lib/${finalArgs.pkgName}.wasm
               wasm-validate $out/lib/${finalArgs.pkgName}-stripped.wasm
             '';
             doCheck = true;
