@@ -38,7 +38,7 @@
           ];
 
         buildRustWasiWasm = self.lib.buildRustWasiWasm final;
-        buildRustWasmPackage = self.lib.buildRustWasmPackage final;
+        buildWasmPackage = self.lib.buildWasmPackage final;
         buildRustWasmScript = self.lib.buildRustWasmScript final;
         buildRustWasmEdgeExec = self.lib.buildRustWasmEdgeExec final;
         buildRustWasmtimeExec = self.lib.buildRustWasmtimeExec final;
@@ -63,12 +63,12 @@
       });
 
       packages = forAllSystems ({ pkgs, system }: rec {
-        default = hello-wasm-pkg;
+        default = hello-wasm;
         hello-wasm = pkgs.buildRustWasiWasm {
           name = "hello-wasm";
           src = self;
         };
-        hello-wasm-pkg = pkgs.buildRustWasmPackage { };
+        hello-wasm-pkg = pkgs.buildWasmPackage { };
         hello-wasmtime-exec = pkgs.buildRustWasmtimeExec { };
         hello-wasmedge-exec = pkgs.buildRustWasmEdgeExec { };
       });
@@ -106,7 +106,10 @@
             CARGO_BUILD_TARGET = rustWasmTarget;
             buildInputs = with pkgs; [ wabt ];
             postInstall = ''
-              wasm-validate $out/bin/${name}.wasm
+              mkdir -p $out/lib
+              wasm-strip $out/bin/${name}.wasm -o $out/lib/${name}.wasm
+              rm -rf $out/bin
+              wasm-validate $out/lib/${name}.wasm
             '';
           };
 
@@ -124,7 +127,7 @@
             # TODO: bring in accordance with the new Wasmtime interface (WASMTIME_NEW_CLI=1)
             installPhase = ''
               mkdir -p $out/lib
-              cp ${wasmPkg}/bin/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
+              cp ${wasmPkg}/lib/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
               makeWrapper ${pkgs.wasmtime}/bin/wasmtime $out/bin/${finalArgs.pkgName} \
                 --set WASMTIME_NEW_CLI 0 \
                 --add-flags "$out/lib/${finalArgs.pkgName}.wasm" \
@@ -145,13 +148,14 @@
             nativeBuildInputs = with pkgs; [ makeWrapper ];
             installPhase = ''
               mkdir -p $out/lib
-              cp ${wasmPkg}/bin/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
+              cp ${wasmPkg}/lib/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
               makeWrapper ${pkgs.wasmedge}/bin/wasmedge $out/bin/${finalArgs.pkgName} \
                 --add-flags "$out/lib/${finalArgs.pkgName}.wasm"
             '';
           };
 
-        buildRustWasmPackage = pkgs: args:
+        # Take a Wasm binary and strip it, provide stats, etc.
+        buildWasmPackage = pkgs: args:
           let
             finalArgs = self.lib.handleArgs args;
             wasmPkg = self.lib.buildRustWasiWasm pkgs {
@@ -167,15 +171,11 @@
             ];
             buildPhase = ''
               mkdir -p $out/{lib,share}
-              cp ${wasmPkg}/bin/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
-              wasm-strip $out/lib/${finalArgs.pkgName}.wasm -o $out/lib/${finalArgs.pkgName}-stripped.wasm
+              cp ${wasmPkg}/lib/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
               wasm2wat $out/lib/${finalArgs.pkgName}.wasm > $out/share/${finalArgs.pkgName}.wat
               wasm-stats $out/lib/${finalArgs.pkgName}.wasm -o $out/share/${finalArgs.pkgName}.dist
               wasm-objdump \
                 --details $out/lib/${finalArgs.pkgName}.wasm > $out/share/${finalArgs.pkgName}-dump.txt
-            '';
-            checkPhase = ''
-              wasm-validate $out/lib/${finalArgs.pkgName}-stripped.wasm
             '';
             doCheck = true;
           };
