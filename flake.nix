@@ -124,14 +124,12 @@
             name = finalArgs.name;
             src = finalArgs.src;
             nativeBuildInputs = with pkgs; [ makeWrapper ];
-            # TODO: bring in accordance with the new Wasmtime interface (WASMTIME_NEW_CLI=1)
             installPhase = ''
               mkdir -p $out/lib
               cp ${wasmPkg}/lib/${finalArgs.name}.wasm $out/lib/${finalArgs.pkgName}.wasm
               makeWrapper ${pkgs.wasmtime}/bin/wasmtime $out/bin/${finalArgs.pkgName} \
-                --set WASMTIME_NEW_CLI 0 \
-                --add-flags "$out/lib/${finalArgs.pkgName}.wasm" \
-                --add-flags "--"
+                --set WASMTIME_NEW_CLI 1 \
+                --add-flags "$out/lib/${finalArgs.pkgName}.wasm"
             '';
           };
 
