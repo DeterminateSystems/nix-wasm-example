@@ -23,7 +23,7 @@
         pkgs = import inputs.nixpkgs { inherit system; overlays = [ self.overlays.default ]; };
         inherit system;
       });
-      rustWasmTarget = "wasm32-wasi";
+      rustWasmTarget = "wasm32-wasip1";
     in
     {
       overlays.default = final: prev: rec {
