@@ -25,77 +25,46 @@ Below are some packages you can build in this project.
 
 ### Build Wasm binary
 
-To build a Wasm executable from the [Rust sources](./src/main.rs):
+To build a Wasm binary from the [Rust sources](./src/main.rs):
 
 ```shell
-nix build ".#wasm-rust"
+nix build ".#hello-wasm"
 ```
 
-This generates a Wasm binary at `result/bin/hello-wasm.wasm`.
+This generates a [stripped] Wasm binary at `result/lib/hello-wasm.wasm` (where `result` is a symlink to a [Nix store][store] path).
 
-### Build a [stripped] binary
+### Build a full Wasm package
+
+To build a Wasm binary from the Rust sources plus some other goodies:
 
 ```shell
-nix build ".#stripped"
+nix build ".#hello-wasm-pkg"
+
+# Inspect the package
+tree result
 ```
 
-This generates a [stripped] Wasm binary at `result/bin/hello-wasm-stripped.wasm`.
+Inside the package you should see:
 
-### Generate [stats]
+* `lib/hello-wasm.wasm` (the same [stripped] binary from [above](#build-wasm-binary))
+* `share/hello-wasm-dump.txt` (an [object dump][objdump])
+* `share/hello-wasm.dist` (a [stats] file)
+* `share/hello-wasm.wat` (a human-readable [WAT] file)
+
+### Run the binary
+
+You can also run the compiled binary using two different Wasm runtimes.
+
+To run it using [WasmEdge]:
 
 ```shell
-nix build ".#stats"
+nix run ".#hello-wasmedge-exec"
 ```
 
-This generates a `.dist` file at `result/share/hello-wasm.dist`.
-
-### Build a WebAssembly text format ([WAT]) file
+To run it using [Wasmtime]:
 
 ```shell
-nix build ".#wat"
-```
-
-This generates a human-readable `.wat` file at `result/share/hello-wasm.wat`.
-
-### Generate an [object dump][objdump]
-
-```shell
-nix build ".#objdump"
-```
-
-This generates `.txt` file at `result/share/hello-wasm-dump-txt`.
-
-### Build everything
-
-```shell
-nix build
-
-# shorthand for both of these:
-nix build ".#default"
-nix build ".#wasm-all"
-```
-
-This generates several files in `result`[^1]:
-
-* `bin/hello-wasm.wasm` (the raw binary)
-* `bin/hello-wasm-stripped.wasm` (the [stripped] version of the binary)
-* `share/hello-wasm-dump.txt` (the )
-* `share/hello-wasm.dist` (the [stats] file)
-* `share/hello-wasm.wat` (the human-readable [WAT] file)
-
-### Run
-
-```shell
-run-wasm
-
-# Run the stripped version
-run-wasm-stripped
-```
-
-### Validate
-
-```shell
-validate-wasm
+nix run ".#hello-wasmtime-exec"
 ```
 
 ## Advantages of Nix for Wasm development
@@ -111,10 +80,12 @@ validate-wasm
 [nix]: https://zero-to-nix.com
 [objdump]: https://webassembly.github.io/wabt/doc/wasm-objdump.1.html
 [rust]: https://rust-lang.org
-[stats]: https://pengowray.github.io/wasm-ops
+[stats]: https://webassembly.github.io/wabt/doc/wasm-stats.1.html
 [store]: https://zero-to-nix.com/concepts/nix-store
 [stripped]: https://webassembly.github.io/wabt/doc/wasm-strip.1.html
 [wasm]: https://webassembly.org
+[wasmedge]: https://wasmedge.org
+[wasmtime]: https://docs.wasmtime.dev
 [wat]: https://developer.mozilla.org/docs/WebAssembly/Understanding_the_text_format
 
 [^1]: `result` isn't a local directory but rather a symlink to the build result directory in the
