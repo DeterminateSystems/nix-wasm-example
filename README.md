@@ -1,5 +1,9 @@
 # Nix + WebAssembly example project
 
+> [!INFO]
+> This repo was created as a complement to the [Nix as a WebAssembly build tool][blog-post] blog post on the [Determinate Systems blog][blog] and fulfilled its purpose.
+> It won't be updated further but you're free to use it [as you see fit](./LICENSE)!
+
 This repo houses an example project that uses [Nix] to build and hack on [WebAssembly][wasm] (Wasm) in [Rust].
 
 ## Setup
@@ -17,7 +21,8 @@ With Nix installed, you can activate the [development environment][dev]:
 nix develop
 ```
 
-> **Note**: This should happen automatically if you have [direnv] installed and run `direnv allow`.
+> [!NOTE]
+> This should happen automatically if you have [direnv] installed and run `direnv allow`.
 
 ## Packages
 
@@ -73,6 +78,8 @@ nix run ".#hello-wasmtime-exec"
 * Successful Wasm development environments often a wide range of tools, compilers, runtimes, etc.
 * Nix can not only provide arbitrarily complex development environments but it can do so across Unix-based platforms.
 
+[blog]: https://determinate.systems/posts
+[blog-post]: https://determinate.systems/posts/nix-wasm
 [dev]: https://zero-to-nix.com/concepts/dev-env
 [direnv]: https://direnv.net
 [dni]: https://github.com/DeterminateSystems/nix-installer
